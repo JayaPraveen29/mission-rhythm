@@ -69,7 +69,7 @@ export default function ManagePosts() {
     setSaving(false);
 
     setMessage(
-      `"${trimmed}" added — it now appears on the login page.`
+      `"${trimmed}" added `
     );
   };
 
@@ -148,7 +148,7 @@ export default function ManagePosts() {
     setDeletingId(null);
 
     setMessage(
-      `"${postDoc.code}" deleted — it no longer appears on the login page.`
+      `"${postDoc.code}" deleted `
     );
   };
 
