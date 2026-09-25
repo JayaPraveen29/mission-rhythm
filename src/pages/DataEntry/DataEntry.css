@@ -90,7 +90,10 @@ label {
 input,
 select {
   font-family: inherit;
-  font-size: 14.5px;
+  /* FIX: iOS Safari auto-zooms the page when a focused input's
+     font-size is under 16px. Keeping this at 16px stops the
+     zoom-on-tap without changing how anything else looks. */
+  font-size: 16px;
   color: var(--text);
   background: #fbfcfd;
   border: 1px solid var(--border);
@@ -98,6 +101,21 @@ select {
   padding: 10px 12px;
   outline: none;
   width: 100%;
+  /* FIX: lets these shrink to fit their flex column instead of
+     keeping their natural/minimum content width. */
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* FIX: native date/month pickers have their own minimum
+   rendering width (text + calendar icon) that can be wider
+   than the column they sit in, so they were spilling past the
+   card's edge. Capping width/max-width and letting them shrink
+   keeps them inside the box on narrow screens. */
+input[type="date"],
+input[type="month"] {
+  max-width: 100%;
+  min-width: 0;
 }
 
 input:focus,

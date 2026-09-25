@@ -204,7 +204,10 @@ label {
 input,
 select {
   font-family: inherit;
-  font-size: 14.5px;
+  /* FIX: under 16px, iOS Safari zooms the whole page in on focus
+     — this is what causes the zoom right after opening the login
+     form. 16px keeps the layout the same but stops the zoom. */
+  font-size: 16px;
   color: var(--text);
   background: #fbfcfd;
   border: 1px solid var(--border);
@@ -212,6 +215,8 @@ select {
   padding: 10px 12px;
   outline: none;
   width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 

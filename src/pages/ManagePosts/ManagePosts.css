@@ -299,11 +299,14 @@
 
 .edit-row input {
   font-family: inherit;
-  font-size: 13px;
+  /* FIX: same iOS zoom-on-focus issue as the other forms — keep
+     this at/above 16px. */
+  font-size: 16px;
   padding: 5px 8px;
   border: 1px solid var(--border);
   border-radius: 6px;
   width: 150px;
+  box-sizing: border-box;
 }
 
 .save-btn,
