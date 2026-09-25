@@ -1,0 +1,135 @@
+/* pages/DataEntry/DataEntry.css */
+.data-entry-page {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 32px 20px 60px;
+}
+
+.page-head {
+  margin-bottom: 20px;
+}
+
+.page-head h1 {
+  margin: 0 0 4px;
+  font-size: 24px;
+  color: var(--navy);
+}
+
+.page-head p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.tab-btn {
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--steel);
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 18px;
+  cursor: pointer;
+}
+
+.tab-btn.active {
+  background: var(--navy);
+  color: #fff;
+  border-color: var(--navy);
+}
+
+.flash {
+  background: #e7f4ec;
+  color: var(--success);
+  border: 1px solid #bfe3cb;
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  font-size: 13.5px;
+  margin-bottom: 18px;
+}
+
+.entry-form {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 6px 20px rgba(16, 36, 62, 0.06);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.field-row {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+input,
+select {
+  font-family: inherit;
+  font-size: 14.5px;
+  color: var(--text);
+  background: #fbfcfd;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  outline: none;
+  width: 100%;
+}
+
+input:focus,
+select:focus {
+  border-color: var(--steel);
+  box-shadow: 0 0 0 3px rgba(59, 90, 122, 0.15);
+}
+
+.submit-btn {
+  margin-top: 4px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--navy);
+  border: none;
+  border-radius: var(--radius);
+  padding: 12px;
+  cursor: pointer;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: var(--navy-light);
+}
+
+.submit-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+  .field-row {
+    flex-direction: column;
+  }
+}

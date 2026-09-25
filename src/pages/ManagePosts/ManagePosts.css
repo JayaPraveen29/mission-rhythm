@@ -1,0 +1,465 @@
+/* pages/ManagePosts/ManagePosts.css */
+
+.manage-posts-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 32px 20px 60px;
+}
+
+/* Page Header */
+
+.page-head {
+  margin-bottom: 20px;
+}
+
+.page-head h1 {
+  margin: 0 0 4px;
+  font-size: 24px;
+  color: var(--navy);
+}
+
+.page-head p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* Add Post Form */
+
+.entry-form {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: 0 6px 20px rgba(16, 36, 62, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.field input {
+  font-family: inherit;
+  font-size: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.error-text {
+  color: var(--error);
+  font-size: 13px;
+  margin: 0;
+}
+
+.flash {
+  background: #e7f4ec;
+  color: var(--success);
+  border: 1px solid #bfe3cb;
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  font-size: 13.5px;
+}
+
+.submit-btn {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--navy);
+  border: none;
+  border-radius: var(--radius);
+  padding: 11px 16px;
+  cursor: pointer;
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   Existing Posts
+   ========================================================= */
+
+.posts-list {
+  width: 100%;
+  margin-top: 32px;
+}
+
+.posts-list h2 {
+  font-size: 16px;
+  color: var(--navy);
+  margin: 0 0 12px;
+}
+
+/* Table Wrapper
+   Same width as Add Post box
+*/
+
+.posts-table-wrapper {
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: auto;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 6px 20px rgba(16, 36, 62, 0.06);
+}
+
+/* Table */
+
+.posts-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+/* Table Header */
+
+.posts-table th {
+  background: rgba(16, 36, 62, 0.04);
+  color: var(--navy);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+/* Table Cells */
+
+.posts-table td {
+  padding: 9px 14px;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.posts-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.posts-table tbody tr:hover {
+  background: rgba(16, 36, 62, 0.025);
+}
+
+/* =========================================================
+   Column Sizes
+   ========================================================= */
+
+/* S.No */
+
+.posts-table th:first-child,
+.posts-table td:first-child {
+  width: 80px;
+  text-align: left;
+}
+
+/* Post / OP Code */
+
+.posts-table th:nth-child(2),
+.posts-table td:nth-child(2) {
+  width: 250px;
+}
+
+/* Type */
+
+.posts-table th:nth-child(3),
+.posts-table td:nth-child(3) {
+  width: 140px;
+}
+
+/* Actions */
+
+.posts-table th:nth-child(4),
+.posts-table td:nth-child(4) {
+  width: 180px;
+}
+
+/* =========================================================
+   Serial Number
+   ========================================================= */
+
+.serial-number {
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* =========================================================
+   Post Code
+   ========================================================= */
+
+.post-code {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* =========================================================
+   Tags
+   ========================================================= */
+
+.tag-new,
+.tag-static {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 2px 7px;
+}
+
+.tag-new {
+  color: var(--accent);
+  background: rgba(177, 137, 47, 0.12);
+}
+
+.tag-static {
+  color: var(--text-muted);
+  background: rgba(16, 36, 62, 0.07);
+}
+
+/* =========================================================
+   No Action
+   ========================================================= */
+
+.no-action {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* =========================================================
+   Action Buttons
+   ========================================================= */
+
+.table-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.edit-btn {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--navy);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+
+.edit-btn:hover {
+  background: rgba(16, 36, 62, 0.06);
+}
+
+.delete-btn {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--error);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+
+.delete-btn:hover {
+  background: rgba(200, 40, 40, 0.08);
+}
+
+/* =========================================================
+   Edit Row
+   ========================================================= */
+
+.edit-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.edit-row input {
+  font-family: inherit;
+  font-size: 13px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  width: 150px;
+}
+
+.save-btn,
+.cancel-btn {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 4px 10px;
+  cursor: pointer;
+  border: none;
+}
+
+.save-btn {
+  color: #fff;
+  background: var(--navy);
+}
+
+.save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cancel-btn {
+  color: var(--text);
+  background: var(--border);
+}
+
+.edit-row .error-text {
+  flex-basis: 100%;
+  margin: 2px 0 0;
+}
+
+/* =========================================================
+   Delete Confirmation
+   ========================================================= */
+
+.confirm-text {
+  font-size: 12.5px;
+  color: var(--text);
+}
+
+.delete-confirm-btn {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--error);
+  border: none;
+  border-radius: 999px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.delete-confirm-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   Mobile
+   ========================================================= */
+
+@media (max-width: 600px) {
+  .manage-posts-page {
+    padding: 24px 14px 40px;
+  }
+
+  /* FIX: the old mobile layout kept the table's normal row/column
+     shape and just let it scroll sideways inside a fixed-width
+     card, which cut the Type/Actions columns off screen with no
+     visible scrollbar hint. Instead, turn each row into a stacked
+     "card" of label/value pairs — nothing to scroll, nothing cut
+     off. */
+
+  .posts-table-wrapper {
+    width: 100%;
+    overflow-x: visible;
+    border: none;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  .posts-table {
+    width: 100%;
+    min-width: 0;
+    border-collapse: separate;
+    border-spacing: 0 10px;
+  }
+
+  /* Hide the header row — labels move onto each cell instead. */
+  .posts-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .posts-table tbody tr {
+    display: block;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 4px 14px rgba(16, 36, 62, 0.05);
+    padding: 4px 12px;
+  }
+
+  .posts-table tbody tr:hover {
+    background: var(--card-bg);
+  }
+
+  .posts-table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+
+    width: auto !important;
+
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+
+    white-space: normal;
+    text-align: right;
+  }
+
+  .posts-table tbody tr td:last-child {
+    border-bottom: none;
+  }
+
+  /* Row label, shown from the data-label attribute set in JSX */
+  .posts-table td[data-label]::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--navy);
+    text-align: left;
+  }
+
+  .table-actions {
+    justify-content: flex-end;
+  }
+
+  /* Edit / delete-confirm rows span the full card width instead
+     of following the label/value split. */
+  .posts-table td.full-row {
+    display: block;
+    text-align: left;
+    padding: 10px 0;
+  }
+
+  .edit-row input {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}

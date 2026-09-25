@@ -1,0 +1,29 @@
+/* theme.css — shared design tokens used across pages */
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap");
+
+:root {
+  --navy: #10243e;
+  --navy-light: #1c3a5e;
+  --steel: #3b5a7a;
+  --accent: #b1892f;
+  --bg: #eef1f5;
+  --card-bg: #ffffff;
+  --border: #d6dce4;
+  --text: #16233a;
+  --text-muted: #5b6b80;
+  --error: #b3261e;
+  --success: #1e7d43;
+  --radius: 6px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "IBM Plex Sans", "Segoe UI", Arial, sans-serif;
+  background: var(--bg);
+}
