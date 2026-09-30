@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { canFill, canManagePosts } from "../lib/permissions";
 import "./NavBar.css";
 
 export default function NavBar() {
@@ -11,8 +12,9 @@ export default function NavBar() {
 
   if (!profile) return null;
 
-  const canSeeDashboard = profile.authority !== "DL";
-  const isSrDsc = profile.authority === "Sr DSC";
+  const canSeeDashboard = profile.authority !== "DI";
+  const showDataEntry = canFill(profile);
+  const isSrDsc = canManagePosts(profile);
 
   const closeMenu = () => {
     setMenuOpen(false);
@@ -52,9 +54,11 @@ export default function NavBar() {
 
         <nav className="sidebar-links">
 
-          <NavLink to="/data-entry" className={navLinkClass}>
+          {showDataEntry && (
+            <NavLink to="/data-entry" className={navLinkClass}>
             Data Entry
           </NavLink>
+          )}
 
           <NavLink to="/post" className={navLinkClass}>
             Post
@@ -69,6 +73,12 @@ export default function NavBar() {
           {isSrDsc && (
             <NavLink to="/manage-posts" className={navLinkClass}>
               Add Post
+            </NavLink>
+          )}
+
+          {isSrDsc && (
+            <NavLink to="/approvals" className={navLinkClass}>
+              Approvals
             </NavLink>
           )}
 
@@ -191,13 +201,15 @@ export default function NavBar() {
 
         <nav className="mobile-drawer-links">
 
-          <NavLink
+          {showDataEntry && (
+            <NavLink
             to="/data-entry"
             className={navLinkClass}
             onClick={closeMenu}
           >
             Data Entry
           </NavLink>
+          )}
 
           <NavLink
             to="/post"
@@ -224,6 +236,16 @@ export default function NavBar() {
               onClick={closeMenu}
             >
               Add Post
+            </NavLink>
+          )}
+
+          {isSrDsc && (
+            <NavLink
+              to="/approvals"
+              className={navLinkClass}
+              onClick={closeMenu}
+            >
+              Approvals
             </NavLink>
           )}
 

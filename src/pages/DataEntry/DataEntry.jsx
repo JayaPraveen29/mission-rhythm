@@ -1,19 +1,31 @@
 // pages/DataEntry/DataEntry.jsx
 //
-// Lets a Post user log NEW entries: the morning daily plan, the weekly
-// blueprint, or the monthly priorities. Updating/closing existing rows
-// happens on the Post page, not here.
+// Lets IPF (Posts) / SI (OPs) log NEW entries: the daily plan, the weekly
+// blueprint, or the monthly priorities. Once added, the plan is fixed —
+// only ASC / Sr DSC can correct it. The closure update happens (once) on
+// the Post page.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { addEntry } from "../../lib/entries";
+import { STATIC_POSTS, listenPosts } from "../../lib/posts";
+import { db } from "../../firebase";
+import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "firebase/firestore";
 import "./DataEntry.css";
 
 const PRIORITY_OPTIONS = ["High", "Normal", "Low"];
+const RANK_OPTIONS = ["Sr. DSC TPJ", "ASC TPJ", "DI", "IPF", "SIPF", "ASI"]; // built-in ranks
+const ADD_NEW_RANK = "__add_new__"; // value of the "+ Add new rank…" option
 const TABS = ["Daily", "Weekly", "Monthly"];
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
-const thisMonthISO = () => new Date().toISOString().slice(0, 7);
+// Local (device) date, NOT UTC — toISOString() gives the previous day in
+// India between 12:00 AM and 5:30 AM.
+const pad = (n) => String(n).padStart(2, "0");
+const todayISO = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+const thisMonthISO = () => todayISO().slice(0, 7);
 
 export default function DataEntry() {
   const { profile } = useAuth();
@@ -21,7 +33,30 @@ export default function DataEntry() {
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Accounts signed in as "All Post" (the TEST account) pick which post/OP
+  // they are entering for. Everyone else uses their own post.
+  const needsPostPicker = profile.post === "All Post";
+  const [customPosts, setCustomPosts] = useState([]);
+  const [pickedPost, setPickedPost] = useState("");
+  useEffect(() => (needsPostPicker ? listenPosts(setCustomPosts) : undefined), [needsPostPicker]);
+  const postOptions = Array.from(new Set([...STATIC_POSTS, ...customPosts]));
+  const targetPost = needsPostPicker ? pickedPost : profile.post;
+
   const [dDate, setDDate] = useState(todayISO());
+  const [dOfficer, setDOfficer] = useState("");
+  const [dRank, setDRank] = useState("");
+  const [newRank, setNewRank] = useState("");
+
+  // Ranks typed by users are saved in Firestore ("customRanks") so they
+  // appear in the dropdown for everyone from then on.
+  const [customRanks, setCustomRanks] = useState([]);
+  useEffect(() => {
+    const q = query(collection(db, "customRanks"), orderBy("createdAt", "asc"));
+    return onSnapshot(q, (snap) => setCustomRanks(snap.docs.map((d) => d.data().name).filter(Boolean)));
+  }, []);
+  const allRanks = [...RANK_OPTIONS, ...customRanks].filter(
+    (r, i, arr) => arr.findIndex((x) => x.toLowerCase() === r.toLowerCase()) === i
+  );
   const [dTask, setDTask] = useState("");
   const [dTarget, setDTarget] = useState("");
 
@@ -35,77 +70,147 @@ export default function DataEntry() {
   const [mTarget, setMTarget] = useState("");
   const [mPriority, setMPriority] = useState("Normal");
 
-  const flash = (text) => {
+  const [isError, setIsError] = useState(false);
+  const flash = (text, error = false) => {
     setMessage(text);
-    setTimeout(() => setMessage(""), 3000);
+    setIsError(error);
+    setTimeout(() => setMessage(""), error ? 5000 : 3000);
+  };
+
+  // One place that saves, so a failure never leaves the button stuck on
+  // "Saving…" and the user always sees what happened.
+  const saveEntry = async (period, data, reset, okMessage) => {
+    setSaving(true);
+    try {
+      await addEntry(period, targetPost, { createdBy: profile.username, ...data });
+      reset();
+      flash(okMessage);
+      return true;
+    } catch (err) {
+      flash("Could not save. Check your connection and try again.", true);
+      return false;
+    } finally {
+      setSaving(false);
+    }
   };
 
   const submitDaily = async (e) => {
     e.preventDefault();
-    if (!dDate || !dTask) return;
-    setSaving(true);
-    await addEntry("daily", profile.post, {
-      date: dDate,
-      priorityTask: dTask,
-      target: dTarget,
-      status: "Not Reported",
-      achievement: "",
-      result: "",
-      carryForward: "",
-      remarks: "",
-    });
-    setDTask("");
-    setDTarget("");
-    setSaving(false);
-    flash("Daily plan added.");
+    if (!targetPost) return flash("Select a Post / OP first.", true);
+
+    // Rank: either picked from the list, or typed via "+ Add new rank…".
+    const typed = newRank.trim().replace(/\s+/g, " ");
+    const existing = allRanks.find((r) => r.toLowerCase() === typed.toLowerCase());
+    const rank = dRank === ADD_NEW_RANK ? existing || typed : dRank;
+    const isNewRank = dRank === ADD_NEW_RANK && typed && !existing;
+
+    if (!dDate || !dOfficer.trim() || !rank || !dTask.trim()) {
+      return flash("Date, Officer Name, Rank and Priority Task are required.", true);
+    }
+    const ok = await saveEntry(
+      "daily",
+      {
+        date: dDate,
+        officerName: dOfficer.trim(),
+        officerRank: rank,
+        priorityTask: dTask.trim(),
+        target: dTarget.trim(),
+        status: "Not Reported",
+        achievement: "",
+        result: "",
+        carryForward: "",
+        remarks: "",
+      },
+      () => {
+        setDOfficer("");
+        setDRank("");
+        setNewRank("");
+        setDTask("");
+        setDTarget("");
+      },
+      "Daily plan added."
+    );
+    // Remember a newly typed rank so it shows in the dropdown next time.
+    if (ok && isNewRank) {
+      try {
+        await addDoc(collection(db, "customRanks"), {
+          name: rank,
+          createdBy: profile.username,
+          createdAt: serverTimestamp(),
+        });
+      } catch {
+        /* entry is saved; the rank just won't be remembered */
+      }
+    }
   };
 
-  const submitWeekly = async (e) => {
+  const submitWeekly = (e) => {
     e.preventDefault();
-    if (!wStart || !wEnd || !wDesc) return;
-    setSaving(true);
-    await addEntry("weekly", profile.post, {
-      weekStart: wStart,
-      weekEnd: wEnd,
-      description: wDesc,
-      priority: wPriority,
-      status: "Not Reported",
-      weeklyAchievement: "",
-      result: "",
-      remarks: "",
-    });
-    setWDesc("");
-    setSaving(false);
-    flash("Weekly blueprint added.");
+    if (!targetPost) return flash("Select a Post / OP first.", true);
+    if (!wStart || !wEnd || !wDesc.trim()) {
+      return flash("Week Start, Week End and Description are required.", true);
+    }
+    if (wEnd < wStart) return flash("Week End cannot be before Week Start.", true);
+    return saveEntry(
+      "weekly",
+      {
+        weekStart: wStart,
+        weekEnd: wEnd,
+        description: wDesc.trim(),
+        priority: wPriority,
+        status: "Not Reported",
+        weeklyAchievement: "",
+        result: "",
+        remarks: "",
+      },
+      () => setWDesc(""),
+      "Weekly blueprint added."
+    );
   };
 
-  const submitMonthly = async (e) => {
+  const submitMonthly = (e) => {
     e.preventDefault();
-    if (!mMonth || !mTask) return;
-    setSaving(true);
-    await addEntry("monthly", profile.post, {
-      month: mMonth,
-      priorityTask: mTask,
-      target: mTarget,
-      priority: mPriority,
-      status: "Not Reported",
-      monthlyAchievement: "",
-      result: "",
-      carryForwardRemarks: "",
-    });
-    setMTask("");
-    setMTarget("");
-    setSaving(false);
-    flash("Monthly priority added.");
+    if (!targetPost) return flash("Select a Post / OP first.", true);
+    if (!mMonth || !mTask.trim()) return flash("Month and Priority / Task are required.", true);
+    return saveEntry(
+      "monthly",
+      {
+        month: mMonth,
+        priorityTask: mTask.trim(),
+        target: mTarget.trim(),
+        priority: mPriority,
+        status: "Not Reported",
+        monthlyAchievement: "",
+        result: "",
+        carryForwardRemarks: "",
+      },
+      () => {
+        setMTask("");
+        setMTarget("");
+      },
+      "Monthly priority added."
+    );
   };
 
   return (
     <div className="data-entry-page">
       <div className="page-head">
         <h1>Data Entry</h1>
-        <p>
-          Post: <strong>{profile.post}</strong>
-        </p>
+        {needsPostPicker ? (
+          <p>
+            Post / OP:{" "}
+            <select value={pickedPost} onChange={(e) => setPickedPost(e.target.value)}>
+              <option value="" disabled>Select post / OP</option>
+              {postOptions.map((p) => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+          </p>
+        ) : (
+          <p>
+            Post: <strong>{profile.post}</strong>
+          </p>
+        )}
       </div>
 
       <div className="tabs">
@@ -121,7 +226,7 @@ export default function DataEntry() {
         ))}
       </div>
 
-      {message && <div className="flash">{message}</div>}
+      {message && <div className={`flash ${isError ? "error" : ""}`}>{message}</div>}
 
       {tab === "Daily" && (
         <form className="entry-form" onSubmit={submitDaily}>
@@ -129,6 +234,41 @@ export default function DataEntry() {
             <label>Date</label>
             <div className="date-field">
               <input type="date" value={dDate} onChange={(e) => setDDate(e.target.value)} />
+            </div>
+          </div>
+          <div className="field-row">
+            <div className="field">
+              <label>Name of the Officer</label>
+              <input
+                type="text"
+                value={dOfficer}
+                onChange={(e) => setDOfficer(e.target.value)}
+              />
+            </div>
+            <div className="field">
+              <label>Rank</label>
+              <select value={dRank} onChange={(e) => setDRank(e.target.value)}>
+                <option value="" disabled>
+                  Select rank
+                </option>
+                {allRanks.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+                <option value={ADD_NEW_RANK}>+ Add new rank…</option>
+              </select>
+              {dRank === ADD_NEW_RANK && (
+                <input
+                  type="text"
+                  maxLength={30}
+                  autoFocus
+                  placeholder="Type the new rank"
+                  value={newRank}
+                  onChange={(e) => setNewRank(e.target.value)}
+                  style={{ marginTop: 8 }}
+                />
+              )}
             </div>
           </div>
           <div className="field">

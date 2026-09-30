@@ -72,9 +72,10 @@ thead th {
 }
 
 tbody td {
-  padding: 8px 10px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--border);
-  vertical-align: middle;
+  vertical-align: top;
+  line-height: 1.4;
 }
 
 tbody tr:last-child td {
@@ -123,4 +124,98 @@ tbody tr:last-child td {
   text-align: center;
   color: var(--text-muted);
   padding: 22px 0;
+}
+
+.lock-badge {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 5px 9px;
+}
+
+/* ---------- table polish ---------- */
+tbody tr {
+  background: #fff;
+}
+tbody tr:nth-child(even) {
+  background: #f7f9fc;
+}
+tbody tr:hover {
+  background: #eef3fa;
+}
+
+/* column sizing */
+th.nw,
+td.nw {
+  white-space: nowrap;
+}
+td.mid {
+  min-width: 130px;
+}
+td.wide {
+  min-width: 170px;
+  max-width: 280px;
+  overflow-wrap: anywhere;
+}
+th.wide,
+th.mid {
+  min-width: 130px;
+}
+
+/* A <td> must stay a table cell — the old display:flex on it pushed the
+   buttons out of the table. The flex layout now lives on an inner div. */
+.post-page td.row-actions {
+  display: table-cell;
+}
+.actions-inner {
+  display: flex;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+/* Action buttons stay visible while the table scrolls sideways */
+.actions-col {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  background: inherit;
+  box-shadow: -6px 0 8px -6px rgba(16, 36, 62, 0.18);
+}
+thead th.actions-col {
+  background: var(--navy);
+  min-width: 96px;
+}
+tbody td.actions-col {
+  background: inherit;
+}
+
+/* status pills */
+.status-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: #eceff3;
+  color: var(--text-muted);
+}
+.status-pill.ok {
+  background: #e3f4ea;
+  color: #1e7d43;
+}
+.status-pill.warn {
+  background: #fdf1d8;
+  color: #8a5a00;
+}
+.status-pill.bad {
+  background: #fbe6e4;
+  color: #b3261e;
+}
+.status-pill.na {
+  background: #e8ecf3;
+  color: #3b5a7a;
 }

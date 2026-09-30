@@ -13,6 +13,7 @@ import {
   collection,
   addDoc,
   updateDoc,
+  runTransaction,
   doc,
   query,
   where,
@@ -32,6 +33,7 @@ export function addEntry(period, post, data) {
   return addDoc(collection(db, COLLECTIONS[period]), {
     post,
     ...data,
+    locked: false,
     createdAt: serverTimestamp(),
   });
 }
@@ -39,6 +41,34 @@ export function addEntry(period, post, data) {
 // Update an existing row (the "evening update" / closure, or any correction).
 export function updateEntry(period, id, data) {
   return updateDoc(doc(db, COLLECTIONS[period], id), data);
+}
+
+// IPF / SI "Send": saves the update AND locks the row. Done in a transaction
+// so a row that was already sent can never be overwritten by a second send.
+export async function sendEntry(period, id, data, username) {
+  const ref = doc(db, COLLECTIONS[period], id);
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) throw new Error("Entry not found.");
+    if (snap.data().locked === true) {
+      throw new Error("This entry was already sent and is locked.");
+    }
+    tx.update(ref, {
+      ...data,
+      locked: true,
+      sentBy: username,
+      sentAt: serverTimestamp(),
+    });
+  });
+}
+
+// ASC / Sr DSC correction of a sent (or unsent) row. Keeps an audit trail.
+export function correctEntry(period, id, data, username) {
+  return updateDoc(doc(db, COLLECTIONS[period], id), {
+    ...data,
+    correctedBy: username,
+    correctedAt: serverTimestamp(),
+  });
 }
 
 // Live-subscribe to all rows for one Post. Calls callback(rows) whenever

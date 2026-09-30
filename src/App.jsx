@@ -8,6 +8,8 @@ import DataEntry from "./pages/DataEntry/DataEntry";
 import PostPage from "./pages/PostPage/PostPage";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import ManagePosts from "./pages/ManagePosts/ManagePosts";
+import Approvals from "./pages/Approvals/Approvals";
+import { homePath } from "./lib/permissions";
 
 function Shell({ children }) {
   return (
@@ -27,12 +29,12 @@ function AppRoutes() {
     <Routes>
       <Route
         path="/"
-        element={profile ? <Navigate to="/data-entry" replace /> : <LoginPage />}
+        element={profile ? <Navigate to={homePath(profile)} replace /> : <LoginPage />}
       />
       <Route
         path="/data-entry"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute requireFill>
             <Shell>
               <DataEntry />
             </Shell>
@@ -52,7 +54,7 @@ function AppRoutes() {
       <Route
         path="/dashboard"
         element={
-          <ProtectedRoute blockAuthorities={["DL"]}>
+          <ProtectedRoute blockAuthorities={["DI"]}>
             <Shell>
               <Dashboard />
             </Shell>
@@ -62,9 +64,19 @@ function AppRoutes() {
       <Route
         path="/manage-posts"
         element={
-          <ProtectedRoute allowAuthorities={["Sr DSC"]}>
+          <ProtectedRoute allowAuthorities={["Sr DSC", "TEST"]}>
             <Shell>
               <ManagePosts />
+            </Shell>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/approvals"
+        element={
+          <ProtectedRoute allowAuthorities={["Sr DSC", "TEST"]}>
+            <Shell>
+              <Approvals />
             </Shell>
           </ProtectedRoute>
         }

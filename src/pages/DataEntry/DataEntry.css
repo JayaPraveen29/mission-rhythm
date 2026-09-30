@@ -177,3 +177,9 @@ select:focus {
   .field-row {
     flex-direction: column;
   }
+
+.flash.error {
+  background: #fdecea;
+  color: var(--error);
+  border-color: #f3c6c2;
+}

@@ -1,121 +1,164 @@
 // LoginPage.jsx
 //
-// Responsive login screen (mobile + desktop):
-//   - On wide screens: a left branding panel + the login form on the right.
-//   - On narrow screens: branding collapses to a top bar, form takes full width.
+// Two modes on one page:
+//   "login"   -> email + password (Firebase Authentication).
+//   "request" -> Request Access form. Creates the account as PENDING; Sr DSC
+//                approves it (and can adjust authority/post) on the
+//                Approvals page. Until then the person cannot sign in.
 //
-// Fields:
-//   - Username + Password (checked directly against Firestore — no Firebase Auth)
-//   - "Authority" dropdown : Sr DSC, DSC, ASC, DL
-//   - "Post" dropdown      : All Post, plus every static post, plus any
-//                            post a Sr DSC has added from the Add Post page
-//                            (loaded live from Firestore — see lib/posts.js)
-//
-// How auth works here:
-//   This is a plain database login, not Firebase Authentication. The
-//   component looks up the "users" collection in Firestore by username,
-//   then compares the password field on that document directly against
-//   what was typed in. If it matches, it checks that the Authority
-//   selected matches the user's profile, and that the Post matches too —
-//   unless "All Post" is selected, which is treated as access to every post.
-//
-// Expected Firestore schema (collection: "users", one doc per user):
-//   {
-//     username: "jsmith",
-//     password: "theirPassword",
-//     authority: "DSC",     // one of: Sr DSC, DSC, ASC, DL
-//     post: "TPJ"            // one of the post codes, or "All Post"
-//   }
-//
-// NOTE: passwords are stored and compared as plain text in Firestore.
-// That's fine for an internal/testing tool, but avoid this approach for
-// anything exposed publicly — there's no hashing or rate-limiting here.
+// The authority/post chosen here is only a REQUEST — the approved values
+// set by Sr DSC are what the app uses.
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { collection, query, where, getDocs } from "firebase/firestore";
-import { db } from "../../firebase";
 import { useAuth } from "../../context/AuthContext";
 import { STATIC_POSTS, listenPosts } from "../../lib/posts";
+import { REQUESTABLE_AUTHORITIES, postsForAuthority } from "../../lib/permissions";
+import { requestAccess, resetPassword } from "../../lib/users";
 import "./LoginPage.css";
 
-const AUTHORITIES = ["Sr DSC", "DSC", "ASC", "DL"];
+// Turn Firebase error codes into plain messages.
+function friendlyError(err) {
+  switch (err?.code) {
+    case "auth/invalid-credential":
+    case "auth/wrong-password":
+    case "auth/user-not-found":
+    case "auth/invalid-email":
+      return "Incorrect email or password.";
+    case "auth/email-already-in-use":
+      return "An account with this email already exists. Try signing in.";
+    case "auth/weak-password":
+      return "Password must be at least 6 characters.";
+    case "auth/too-many-requests":
+      return "Too many attempts. Please wait a few minutes and try again.";
+    case "auth/network-request-failed":
+      return "Network problem. Check your connection and try again.";
+    default:
+      return err?.message || "Something went wrong. Please try again.";
+  }
+}
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const [username, setUsername] = useState("");
+  const [mode, setMode] = useState("login"); // "login" | "request"
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  // login fields
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  // request fields
+  const [name, setName] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [authority, setAuthority] = useState("");
   const [post, setPost] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  // "All Post" + the fixed list, plus anything a Sr DSC has added — kept
-  // live so a newly-added post shows up here without a refresh.
-  const [posts, setPosts] = useState(["All Post", ...STATIC_POSTS]);
-
+  // "All Post" + the fixed list, plus anything Sr DSC added (live).
+  const [allPosts, setAllPosts] = useState(["All Post", ...STATIC_POSTS]);
   useEffect(() => {
-    const unsub = listenPosts((customPosts) => {
-      const merged = Array.from(new Set([...STATIC_POSTS, ...customPosts]));
-      setPosts(["All Post", ...merged]);
+    const unsub = listenPosts((custom) => {
+      setAllPosts(["All Post", ...Array.from(new Set([...STATIC_POSTS, ...custom]))]);
     });
     return unsub;
   }, []);
+  const posts = postsForAuthority(authority, allPosts);
 
-  const handleSubmit = async (e) => {
+  const switchMode = (m) => {
+    setMode(m);
+    setError("");
+    setNotice("");
+  };
+
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
-
-    if (!username || !password || !authority || !post) {
-      setError("Please fill in every field before signing in.");
+    setNotice("");
+    if (!email.trim() || !password) {
+      setError("Please enter your email and password.");
       return;
     }
-
-    setLoading(true);
+    setBusy(true);
     try {
-      // 1. Look up the user's record by username.
-      const usersRef = collection(db, "users");
-      const q = query(usersRef, where("username", "==", username.trim()));
-      const snapshot = await getDocs(q);
-
-      if (snapshot.empty) {
-        setError("No account found for that username.");
-        setLoading(false);
-        return;
-      }
-
-      const userDoc = snapshot.docs[0].data();
-
-      // 2. Compare the password directly against the Firestore record.
-      if (userDoc.password !== password) {
-        setError("Incorrect password.");
-        setLoading(false);
-        return;
-      }
-
-      // 3. Confirm Authority matches, and Post matches (or "All Post" was picked).
-      const postMatches = post === "All Post" || userDoc.post === post;
-      if (userDoc.authority !== authority || !postMatches) {
-        setError("Authority or Post does not match this account's records.");
-        setLoading(false);
-        return;
-      }
-
-      setLoading(false);
-      login({ username: userDoc.username, authority, post });
-      navigate("/data-entry");
+      await login(email, password);
+      navigate("/"); // App routes to the right home page for the role
     } catch (err) {
-      setLoading(false);
-      setError("Sign-in failed. Please check your details and try again.");
+      setError(friendlyError(err));
+    }
+    setBusy(false);
+  };
+
+  const handleRequest = async (e) => {
+    e.preventDefault();
+    setError("");
+    setNotice("");
+    if (!name.trim() || !email.trim() || !password || !authority || !post) {
+      setError("Please fill in every field.");
+      return;
+    }
+    if (password !== confirm) {
+      setError("Passwords do not match.");
+      return;
+    }
+    setBusy(true);
+    try {
+      await requestAccess({ name, email, password, authority, post });
+      setPassword("");
+      setConfirm("");
+      setMode("login");
+      setNotice("Request sent. You can sign in once Sr DSC approves your account.");
+    } catch (err) {
+      setError(friendlyError(err));
+    }
+    setBusy(false);
+  };
+
+  const handleForgot = async () => {
+    setError("");
+    setNotice("");
+    if (!email.trim()) {
+      setError("Enter your email above first, then click Forgot password.");
+      return;
+    }
+    try {
+      await resetPassword(email);
+      setNotice("If this email has an account, a password reset link has been sent.");
+    } catch (err) {
+      // Same message either way, so we don't reveal which emails exist.
+      setNotice("If this email has an account, a password reset link has been sent.");
     }
   };
 
+  const passwordField = (id, label, value, setValue, autoComplete) => (
+    <div className="field">
+      <label htmlFor={id}>{label}</label>
+      <div className="password-row">
+        <input
+          id={id}
+          type={showPassword ? "text" : "password"}
+          autoComplete={autoComplete}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder={label}
+        />
+        <button
+          type="button"
+          className="toggle-visibility"
+          onClick={() => setShowPassword((v) => !v)}
+          aria-label={showPassword ? "Hide password" : "Show password"}
+        >
+          {showPassword ? "Hide" : "Show"}
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <>
-      {/* Top header bar: logo left, "Railway Protection Force" heading center, logo right */}
       <header className="top-header">
         <img
           src="/Railway_Protection_Force_Logo.png"
@@ -123,116 +166,153 @@ export default function LoginPage() {
           className="header-logo header-logo-left"
         />
         <h1 className="header-title">Southern Railway</h1>
-        <img
-          src="/railways_logo.png"
-          alt="RPF Logo"
-          className="header-logo header-logo-right"
-        />
+        <img src="/railways_logo.png" alt="RPF Logo" className="header-logo header-logo-right" />
       </header>
 
       <div className="login-page">
-      {/* Left branding panel on desktop, top bar on mobile */}
-      <div className="brand-panel">
-        
-        <div className="brand-copy">
-          <h2>Welcome back</h2>
-          <p>Sign in with your credentials, Authority, and Post to continue.</p>
-        </div>
-      </div>
-
-      {/* Right side login form on desktop, below brand panel on mobile */}
-      <div className="login-panel">
-        <div className="login-card">
-          <div className="login-header">
-            <h1>Sign in</h1>
-            <p>Enter your details below.</p>
+        <div className="brand-panel">
+          <div className="brand-copy">
+            <h2>{mode === "login" ? "Welcome back" : "Request access"}</h2>
+            <p>
+              {mode === "login"
+                ? "Sign in with your email and password to continue."
+                : "Fill in your details. Sr DSC will review and approve your access."}
+            </p>
           </div>
-
-          <form className="login-form" onSubmit={handleSubmit} noValidate>
-            <div className="field">
-              <label htmlFor="username">Username</label>
-              <input
-                id="username"
-                type="text"
-                autoComplete="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your username"
-              />
-            </div>
-
-            <div className="field">
-              <label htmlFor="password">Password</label>
-              <div className="password-row">
-                <input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                />
-                <button
-                  type="button"
-                  className="toggle-visibility"
-                  onClick={() => setShowPassword((v) => !v)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? "Hide" : "Show"}
-                </button>
-              </div>
-            </div>
-
-            <div className="field-row">
-              <div className="field">
-                <label htmlFor="authority">Authority</label>
-                <select
-                  id="authority"
-                  value={authority}
-                  onChange={(e) => setAuthority(e.target.value)}
-                >
-                  <option value="" disabled>
-                    Select authority
-                  </option>
-                  {AUTHORITIES.map((a) => (
-                    <option key={a} value={a}>
-                      {a}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="field">
-                <label htmlFor="post">Post</label>
-                <select
-                  id="post"
-                  value={post}
-                  onChange={(e) => setPost(e.target.value)}
-                >
-                  <option value="" disabled>
-                    Select post
-                  </option>
-                  {posts.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {error && (
-              <p className="error-text" role="alert">
-                {error}
-              </p>
-            )}
-
-            <button type="submit" className="submit-btn" disabled={loading}>
-              {loading ? "Signing in…" : "Sign in"}
-            </button>
-          </form>
         </div>
-      </div>
+
+        <div className="login-panel">
+          <div className="login-card">
+            <div className="login-header">
+              <h1>{mode === "login" ? "Sign in" : "Request Access"}</h1>
+              <p>{mode === "login" ? "Enter your details below." : "Use your own email address."}</p>
+            </div>
+
+            {mode === "login" ? (
+              <form className="login-form" onSubmit={handleLogin} noValidate>
+                <div className="field">
+                  <label htmlFor="email">Email</label>
+                  <input
+                    id="email"
+                    type="email"
+                    autoComplete="username"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email"
+                  />
+                </div>
+
+                {passwordField("password", "Password", password, setPassword, "current-password")}
+
+                {error && (
+                  <p className="error-text" role="alert">
+                    {error}
+                  </p>
+                )}
+                {notice && <p className="success-text">{notice}</p>}
+
+                <button type="submit" className="submit-btn" disabled={busy}>
+                  {busy ? "Signing in…" : "Sign in"}
+                </button>
+
+                <div className="login-links">
+                  <button type="button" className="link-btn" onClick={handleForgot}>
+                    Forgot password?
+                  </button>
+                  <button type="button" className="link-btn" onClick={() => switchMode("request")}>
+                    New here? Request Access
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form className="login-form" onSubmit={handleRequest} noValidate>
+                <div className="field">
+                  <label htmlFor="name">Full name</label>
+                  <input
+                    id="name"
+                    type="text"
+                    autoComplete="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Your name"
+                  />
+                </div>
+
+                <div className="field">
+                  <label htmlFor="req-email">Email</label>
+                  <input
+                    id="req-email"
+                    type="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Your own email address"
+                  />
+                </div>
+
+                {passwordField("req-password", "Password", password, setPassword, "new-password")}
+                {passwordField("req-confirm", "Confirm password", confirm, setConfirm, "new-password")}
+
+                <div className="field-row">
+                  <div className="field">
+                    <label htmlFor="authority">Authority</label>
+                    <select
+                      id="authority"
+                      value={authority}
+                      onChange={(e) => {
+                        setAuthority(e.target.value);
+                        setPost(""); // list changes per authority
+                      }}
+                    >
+                      <option value="" disabled>
+                        Select authority
+                      </option>
+                      {REQUESTABLE_AUTHORITIES.map((a) => (
+                        <option key={a} value={a}>
+                          {a}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="field">
+                    <label htmlFor="post">Post</label>
+                    <select id="post" value={post} onChange={(e) => setPost(e.target.value)}>
+                      <option value="" disabled>
+                        Select post
+                      </option>
+                      {posts.map((p) => (
+                        <option key={p} value={p}>
+                          {p}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <p className="form-note">
+                  This is only a request. Sr DSC approves your access and may adjust the authority or post.
+                </p>
+
+                {error && (
+                  <p className="error-text" role="alert">
+                    {error}
+                  </p>
+                )}
+
+                <button type="submit" className="submit-btn" disabled={busy}>
+                  {busy ? "Sending request…" : "Request Access"}
+                </button>
+
+                <div className="login-links">
+                  <button type="button" className="link-btn" onClick={() => switchMode("login")}>
+                    Back to Sign in
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
       </div>
     </>
   );
