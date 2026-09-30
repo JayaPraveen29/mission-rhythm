@@ -39,12 +39,12 @@ export default function NavBar() {
         <div className="sidebar-brand">
           <img
             src="/Railway_Protection_Force_Logo.png"
-            alt="RPF"
+            alt="Southern Railway"
             className="sidebar-logo-img"
           />
 
           <span className="sidebar-brand-name">
-            RPF
+            Southern Railway
           </span>
         </div>
 
@@ -117,12 +117,12 @@ export default function NavBar() {
 
           <img
             src="/Railway_Protection_Force_Logo.png"
-            alt="RPF"
+            alt="Southern Railway"
             className="mobile-logo"
           />
 
           <span className="mobile-brand-name">
-            RPF
+            Southern Railway
           </span>
 
         </div>
@@ -160,12 +160,12 @@ export default function NavBar() {
 
             <img
               src="/Railway_Protection_Force_Logo.png"
-              alt="RPF"
+              alt="Southern Railway"
               className="mobile-drawer-logo"
             />
 
             <span>
-              RPF
+              Southern Railway
             </span>
 
           </div>

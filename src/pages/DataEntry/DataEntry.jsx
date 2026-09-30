@@ -127,7 +127,9 @@ export default function DataEntry() {
         <form className="entry-form" onSubmit={submitDaily}>
           <div className="field">
             <label>Date</label>
-            <input type="date" value={dDate} onChange={(e) => setDDate(e.target.value)} />
+            <div className="date-field">
+              <input type="date" value={dDate} onChange={(e) => setDDate(e.target.value)} />
+            </div>
           </div>
           <div className="field">
             <label>Priority Task(s) for Today</label>
@@ -152,11 +154,15 @@ export default function DataEntry() {
           <div className="field-row">
             <div className="field">
               <label>Week Start</label>
-              <input type="date" value={wStart} onChange={(e) => setWStart(e.target.value)} />
+              <div className="date-field">
+                <input type="date" value={wStart} onChange={(e) => setWStart(e.target.value)} />
+              </div>
             </div>
             <div className="field">
               <label>Week End</label>
-              <input type="date" value={wEnd} onChange={(e) => setWEnd(e.target.value)} />
+              <div className="date-field">
+                <input type="date" value={wEnd} onChange={(e) => setWEnd(e.target.value)} />
+              </div>
             </div>
           </div>
           <div className="field">
@@ -183,7 +189,9 @@ export default function DataEntry() {
         <form className="entry-form" onSubmit={submitMonthly}>
           <div className="field">
             <label>Month</label>
-            <input type="month" value={mMonth} onChange={(e) => setMMonth(e.target.value)} />
+            <div className="date-field">
+              <input type="month" value={mMonth} onChange={(e) => setMMonth(e.target.value)} />
+            </div>
           </div>
           <div className="field">
             <label>Priority / Task</label>

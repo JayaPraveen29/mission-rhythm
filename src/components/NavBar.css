@@ -643,3 +643,17 @@
     width: 270px;
   }
 }
+
+.mobile-drawer-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.mobile-drawer-brand span {
+  font-size: 15px;
+  line-height: 1.25;
+  letter-spacing: 0.5px;
+  white-space: normal;
+}

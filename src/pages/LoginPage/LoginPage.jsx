@@ -122,7 +122,7 @@ export default function LoginPage() {
           alt="Indian Railways Logo"
           className="header-logo header-logo-left"
         />
-        <h1 className="header-title">Railway Protection Force</h1>
+        <h1 className="header-title">Southern Railway</h1>
         <img
           src="/railways_logo.png"
           alt="RPF Logo"
@@ -133,10 +133,7 @@ export default function LoginPage() {
       <div className="login-page">
       {/* Left branding panel on desktop, top bar on mobile */}
       <div className="brand-panel">
-        <div className="brand-logo">
-          
-          <span className="brand-name">MISSION RHYTHM</span>
-        </div>
+        
         <div className="brand-copy">
           <h2>Welcome back</h2>
           <p>Sign in with your credentials, Authority, and Post to continue.</p>

@@ -101,17 +101,12 @@ select {
   padding: 10px 12px;
   outline: none;
   width: 100%;
-  /* FIX: lets these shrink to fit their flex column instead of
-     keeping their natural/minimum content width. */
+
   min-width: 0;
   box-sizing: border-box;
 }
 
-/* FIX: native date/month pickers have their own minimum
-   rendering width (text + calendar icon) that can be wider
-   than the column they sit in, so they were spilling past the
-   card's edge. Capping width/max-width and letting them shrink
-   keeps them inside the box on narrow screens. */
+
 input[type="date"],
 input[type="month"] {
   max-width: 100%;
@@ -146,8 +141,39 @@ select:focus {
   cursor: not-allowed;
 }
 
-@media (max-width: 480px) {
+/* FIX: Safari on iOS renders <input type="date"> and
+   type="month"> with an internal control that doesn't fully
+   respect border-radius/width like a normal text input, so a
+   sliver of it pokes out past the card's rounded corner (visible
+   on iPhone, not on Android/Chrome). Wrapping it in a container
+   that owns the border/radius/background and clips with
+   overflow:hidden guarantees nothing Safari draws inside can
+   ever render outside the box, regardless of how it sizes its
+   own control. */
+.date-field {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fbfcfd;
+  overflow: hidden;
+}
+
+.date-field input[type="date"],
+.date-field input[type="month"] {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  display: block;
+}
+
+.date-field input[type="date"]:focus,
+.date-field input[type="month"]:focus {
+  box-shadow: none;
+}
+
+.date-field:focus-within {
+  border-color: var(--steel);
+  box-shadow: 0 0 0 3px rgba(59, 90, 122, 0.15);
+}
   .field-row {
     flex-direction: column;
   }
-}

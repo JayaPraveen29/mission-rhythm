@@ -86,54 +86,15 @@ body {
   }
 }
 
-/* ---------- Left branding panel (top bar on mobile) ---------- */
+/* ---------- Left branding panel ----------
+   Hidden on mobile/tablet (it used to show as an empty navy bar once the
+   brand name was removed). Only appears on desktop, next to the login form. */
 .brand-panel {
-  background: linear-gradient(160deg, var(--navy) 0%, var(--navy-light) 100%);
-  color: #fff;
-  padding: 20px 24px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.brand-logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.logo-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background: var(--accent);
-  color: var(--navy);
-  font-weight: 700;
-  font-size: 15px;
-  letter-spacing: 0.5px;
-  flex-shrink: 0;
-}
-
-.logo-img {
-  width: 56px;
-  height: 56px;
-  object-fit: contain;
-  flex-shrink: 0;
-  border-radius: 50%;
-}
-
-.brand-name {
-  font-weight: 700;
-  font-size: 15px;
-  letter-spacing: 1px;
-  white-space: nowrap;
+  display: none;
 }
 
 .brand-copy {
-  display: none;
+  display: block;
 }
 
 /* ---------- Right login panel ---------- */
@@ -204,9 +165,7 @@ label {
 input,
 select {
   font-family: inherit;
-  /* FIX: under 16px, iOS Safari zooms the whole page in on focus
-     — this is what causes the zoom right after opening the login
-     form. 16px keeps the layout the same but stops the zoom. */
+  /* 16px stops iOS Safari from zooming the page in on focus. */
   font-size: 16px;
   color: var(--text);
   background: #fbfcfd;
@@ -297,7 +256,7 @@ select {
   }
 }
 
-/* ---------- Tablets and up: still stacked (brand bar on top), roomier card ---------- */
+/* ---------- Tablets and up: roomier card ---------- */
 @media (min-width: 640px) {
   .login-card {
     padding: 40px 36px 32px;
@@ -311,16 +270,14 @@ select {
   }
 
   .brand-panel {
+    display: flex;
     flex: 1.1;
     flex-direction: column;
     align-items: flex-start;
     justify-content: center;
     padding: 60px 64px;
-    gap: 28px;
-  }
-
-  .brand-copy {
-    display: block;
+    background: linear-gradient(160deg, var(--navy) 0%, var(--navy-light) 100%);
+    color: #fff;
   }
 
   .brand-copy h2 {
