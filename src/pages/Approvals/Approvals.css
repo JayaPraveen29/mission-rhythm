@@ -23,3 +23,8 @@
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+.approvals-page .row-actions .btn-delete {
+  color: #b42318;
+  border-color: #f0b8b3;
+}

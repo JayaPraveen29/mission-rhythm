@@ -12,7 +12,7 @@ export default function NavBar() {
 
   if (!profile) return null;
 
-  const canSeeDashboard = profile.authority !== "DI";
+  const canSeeDashboard = !["DI", "ASI"].includes(profile.authority);
   const showDataEntry = canFill(profile);
   const isSrDsc = canManagePosts(profile);
 

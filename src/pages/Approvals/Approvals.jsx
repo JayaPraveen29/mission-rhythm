@@ -2,14 +2,20 @@
 //
 // Sr DSC (and TEST) only. Reviews access requests:
 //   Pending  -> Approve (optionally changing authority/post first) or Reject
-//   Approved -> Save changes to authority/post, or Revoke access
-//   Rejected -> Approve later if needed
+//   Approved -> Save changes to authority/post, Revoke access, or Delete
+//   Rejected -> Approve later if needed, or Delete
 
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { STATIC_POSTS, listenPosts } from "../../lib/posts";
 import { AUTHORITIES, postsForAuthority } from "../../lib/permissions";
-import { listenUsersByStatus, approveUser, rejectUser, updateUserAccess } from "../../lib/users";
+import {
+  listenUsersByStatus,
+  approveUser,
+  rejectUser,
+  updateUserAccess,
+  deleteUserAccount,
+} from "../../lib/users";
 import "../PostPage/PostPage.css"; // shared table/tab styles
 import "./Approvals.css";
 
@@ -85,6 +91,10 @@ export default function Approvals() {
     return run(u, () => approveUser(u.uid, v, profile.username), `${u.name} approved.`);
   };
   const reject = (u) => run(u, () => rejectUser(u.uid, profile.username), `${u.name} rejected.`);
+  const remove = (u) => {
+    if (!window.confirm(`Permanently delete ${u.name} (${u.email})? This cannot be undone.`)) return;
+    return run(u, () => deleteUserAccount(u.uid), `${u.name} deleted.`);
+  };
   const saveChanges = (u) => {
     const v = valuesFor(u);
     if (!v.authority || !v.post) return flash("Choose an authority and a post first.");
@@ -187,12 +197,30 @@ export default function Approvals() {
                         <button type="button" disabled={busy || isMe} onClick={() => reject(u)}>
                           {isMe ? "You" : "Revoke"}
                         </button>
+                        <button
+                          type="button"
+                          className="btn-delete"
+                          disabled={busy || isMe}
+                          onClick={() => remove(u)}
+                        >
+                          Delete
+                        </button>
                       </>
                     )}
                     {tab.status === "rejected" && (
-                      <button type="button" disabled={busy} onClick={() => approve(u)}>
-                        Approve
-                      </button>
+                      <>
+                        <button type="button" disabled={busy} onClick={() => approve(u)}>
+                          Approve
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-delete"
+                          disabled={busy}
+                          onClick={() => remove(u)}
+                        >
+                          Delete
+                        </button>
+                      </>
                     )}
                   </div>
                   </td>

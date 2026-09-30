@@ -31,6 +31,7 @@ export function postsForAuthority(authority, allPosts) {
   const real = allPosts.filter((p) => p !== "All Post");
   if (authority === "IPF") return real.filter((p) => !isOpPost(p));
   if (authority === "SI") return real.filter(isOpPost);
+  if (authority === "ASI") return real; // view-only, one Post/OP only (no "All Post")
   return allPosts;
 }
 

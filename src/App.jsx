@@ -54,7 +54,7 @@ function AppRoutes() {
       <Route
         path="/dashboard"
         element={
-          <ProtectedRoute blockAuthorities={["DI"]}>
+          <ProtectedRoute blockAuthorities={["DI", "ASI"]}>
             <Shell>
               <Dashboard />
             </Shell>

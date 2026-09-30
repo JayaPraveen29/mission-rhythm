@@ -20,6 +20,7 @@ import {
   collection,
   doc,
   setDoc,
+  deleteDoc,
   updateDoc,
   query,
   where,
@@ -90,4 +91,11 @@ export function rejectUser(uid, approverName) {
 // Change the authority / post of someone who is already approved.
 export function updateUserAccess(uid, { authority, post }) {
   return updateDoc(doc(db, "users", uid), { authority, post });
+}
+
+// Permanently removes the person's users/{uid} record. They lose all access
+// and disappear from every Approvals tab. (The Firebase sign-in account itself
+// can only be deleted from the Firebase console or a Cloud Function.)
+export function deleteUserAccount(uid) {
+  return deleteDoc(doc(db, "users", uid));
 }
