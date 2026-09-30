@@ -6,12 +6,12 @@
 //   IPF  -> fills POST data      (any post that is NOT an "-OP" code)
 //   SI   -> fills OP data        (codes ending in "-OP", e.g. ALU-OP)
 //   ASC / Sr DSC -> the ONLY roles that can correct an entry after it is sent
-//   Everyone else (DSC, DI) -> view only on the Post page
+//   Everyone else (DSC, ASI, DI) -> view only on the Post page
 
-export const AUTHORITIES = ["Sr DSC", "DSC", "ASC", "IPF", "SI", "DI", "TEST"];
+export const AUTHORITIES = ["Sr DSC", "DSC", "ASC", "IPF", "SI", "ASI", "DI", "TEST"];
 // What a person may ask for on the Request Access form (TEST is only ever
 // assigned by Sr DSC on the Approvals page).
-export const REQUESTABLE_AUTHORITIES = ["IPF", "SI", "ASC", "DSC", "DI", "Sr DSC"];
+export const REQUESTABLE_AUTHORITIES = ["IPF", "SI", "ASI", "ASC", "DSC", "DI", "Sr DSC"];
 export const CORRECT_AUTHORITIES = ["ASC", "Sr DSC"];
 
 // TEST = temporary all-access account (fill any post/OP, correct, dashboard,
