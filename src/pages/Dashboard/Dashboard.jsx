@@ -29,9 +29,22 @@ function summarize(rows, postList) {
 const pct = (closures, tasks) => (tasks > 0 ? Math.round((closures / tasks) * 100) : 0);
 
 // Defaults, in the native <input> formats: date = YYYY-MM-DD, month = YYYY-MM.
-const DEFAULT_WEEK_START = "2026-08-31";
-const DEFAULT_WEEK_END = "2026-09-06";
-const DEFAULT_MONTH = "2026-09";
+// They follow the current date: this week (Mon–Sun) and this month.
+const toISO = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+function currentWeek() {
+  const now = new Date();
+  const day = (now.getDay() + 6) % 7; // Mon = 0
+  const mon = new Date(now);
+  mon.setDate(now.getDate() - day);
+  const sun = new Date(mon);
+  sun.setDate(mon.getDate() + 6);
+  return [toISO(mon), toISO(sun)];
+}
+
+const [DEFAULT_WEEK_START, DEFAULT_WEEK_END] = currentWeek();
+const DEFAULT_MONTH = toISO(new Date()).slice(0, 7);
 
 export default function Dashboard() {
   const [customPosts, setCustomPosts] = useState([]);
