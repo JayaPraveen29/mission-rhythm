@@ -11,7 +11,7 @@
 //
 // Rules live in lib/permissions.js.
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import {
   listenEntries,
@@ -96,6 +96,27 @@ const statusClass = (v) =>
 // so it counts as the newest and shows first.
 const entryTime = (r) => r.createdAt?.toMillis?.() ?? Number.MAX_SAFE_INTEGER;
 
+
+// Long text (achievements, results…) is clamped to a few lines with a
+// "Show more" toggle so one verbose row no longer takes over the screen.
+const LONG_TEXT = 140;
+function ExpandableText({ text }) {
+  const [open, setOpen] = useState(false);
+  if (!text) return <span className="cell-empty">—</span>;
+  const str = String(text);
+  const isLong = str.length > LONG_TEXT || str.split("\n").length > 3;
+  return (
+    <div className="cell-text">
+      <div className={isLong && !open ? "clamp" : ""}>{str}</div>
+      {isLong && (
+        <button type="button" className="more-btn" onClick={() => setOpen((o) => !o)}>
+          {open ? "Show less" : "Show more"}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function PostPage() {
   const { profile } = useAuth();
   const isAllPosts = profile.post === "All Post";
@@ -107,6 +128,8 @@ export default function PostPage() {
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState({});
   const [busy, setBusy] = useState(false);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
 
   // Ranks added on Data Entry ("customRanks") so the Correct dropdown can
   // show them too.
@@ -136,7 +159,28 @@ export default function PostPage() {
   }, [profile.post, isAllPosts]);
 
   const cfg = PERIODS[tab];
-  const list = rows[cfg.key];
+  const allRows = rows[cfg.key];
+
+  // Search across every visible field + optional status filter.
+  const list = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return allRows.filter((r) => {
+      if (statusFilter !== "All" && (r.status || "Not Reported") !== statusFilter) return false;
+      if (!q) return true;
+      const hay = [r.post, ...cfg.cols.map((c) => r[c.f])].join(" ").toLowerCase();
+      return hay.includes(q);
+    });
+  }, [allRows, search, statusFilter, cfg]);
+
+  // Status counts for the summary chips (ignores the status filter itself).
+  const counts = useMemo(() => {
+    const c = {};
+    allRows.forEach((r) => {
+      const k = r.status || "Not Reported";
+      c[k] = (c[k] || 0) + 1;
+    });
+    return c;
+  }, [allRows]);
 
   const cancelEdit = () => {
     setEditingId(null);
@@ -192,6 +236,16 @@ export default function PostPage() {
         </select>
       );
     }
+    if (!c.type) {
+      return (
+        <textarea
+          rows={3}
+          value={draft[c.f] || ""}
+          disabled={disabled}
+          onChange={(e) => setField(c.f, e.target.value)}
+        />
+      );
+    }
     return (
       <input
         type={c.type || "text"}
@@ -242,12 +296,39 @@ export default function PostPage() {
             className={`tab-btn ${tab === t ? "active" : ""}`}
             onClick={() => {
               setTab(t);
+              setStatusFilter("All");
               cancelEdit();
             }}
           >
             {t}
+            <span className="tab-count">{rows[PERIODS[t].key].length}</span>
           </button>
         ))}
+      </div>
+
+      <div className="toolbar">
+        <input
+          type="search"
+          className="search-input"
+          placeholder={`Search ${tab.toLowerCase()} entries…`}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <div className="chips">
+          {["All", ...STATUS_OPTIONS].map((st) => {
+            const n = st === "All" ? allRows.length : counts[st] || 0;
+            return (
+              <button
+                key={st}
+                type="button"
+                className={`chip ${statusFilter === st ? "active" : ""}`}
+                onClick={() => setStatusFilter(st)}
+              >
+                {st} <b>{n}</b>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="table-scroll">
@@ -276,7 +357,7 @@ export default function PostPage() {
                       ? (e) => {
                           // Enter-to-save only for corrections; "Send" is irreversible,
                           // so IPF/SI must click the button.
-                          if (e.key === "Enter" && corrector) {
+                          if (e.key === "Enter" && corrector && e.target.tagName !== "TEXTAREA") {
                             e.preventDefault();
                             save(row);
                           } else if (e.key === "Escape") cancelEdit();
@@ -291,9 +372,11 @@ export default function PostPage() {
                       {editing ? (
                         renderInput(c)
                       ) : c.type === "status" ? (
-                        <span className={`status-pill ${statusClass(row[c.f])}`}>{row[c.f]}</span>
-                      ) : (
+                        <span className={`status-pill ${statusClass(row[c.f])}`}>{row[c.f] || "Not Reported"}</span>
+                      ) : c.type ? (
                         row[c.f]
+                      ) : (
+                        <ExpandableText text={row[c.f]} />
                       )}
                     </td>
                   ))}
@@ -306,7 +389,9 @@ export default function PostPage() {
             {list.length === 0 && (
               <tr>
                 <td colSpan={colCount} className="empty-row">
-                  No {tab.toLowerCase()} entries yet.
+                  {allRows.length === 0
+                    ? `No ${tab.toLowerCase()} entries yet.`
+                    : "No entries match your search or filter."}
                 </td>
               </tr>
             )}

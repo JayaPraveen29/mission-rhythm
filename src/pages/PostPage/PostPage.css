@@ -1,6 +1,6 @@
 /* pages/PostPage/PostPage.css */
 .post-page {
-  max-width: 1100px;
+  max-width: 1600px;
   margin: 0 auto;
   padding: 32px 20px 60px;
 }
@@ -48,7 +48,9 @@
 
 .table-scroll {
   width: 100%;
-  overflow-x: auto;
+  overflow: auto;
+  max-height: calc(100vh - 260px);
+  min-height: 240px;
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -63,6 +65,9 @@ table {
 }
 
 thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   background: var(--navy);
   color: #fff;
   text-align: left;
@@ -75,7 +80,7 @@ tbody td {
   padding: 10px 12px;
   border-bottom: 1px solid var(--border);
   vertical-align: top;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 tbody tr:last-child td {
@@ -156,8 +161,8 @@ td.mid {
   min-width: 130px;
 }
 td.wide {
-  min-width: 170px;
-  max-width: 280px;
+  min-width: 240px;
+  max-width: 340px;
   overflow-wrap: anywhere;
 }
 th.wide,
@@ -187,6 +192,7 @@ th.mid {
 thead th.actions-col {
   background: var(--navy);
   min-width: 96px;
+  z-index: 3;
 }
 tbody td.actions-col {
   background: inherit;
@@ -218,4 +224,121 @@ tbody td.actions-col {
 .status-pill.na {
   background: #e8ecf3;
   color: #3b5a7a;
+}
+
+/* ---------- readable long text ---------- */
+.cell-text {
+  white-space: pre-line; /* keeps "•" bullets on their own lines */
+}
+.cell-text .clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.cell-empty {
+  color: #aab4c2;
+}
+.more-btn {
+  margin-top: 4px;
+  padding: 0;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--steel);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.more-btn:hover {
+  color: var(--navy);
+}
+
+.editing-row td textarea {
+  width: 100%;
+  min-width: 220px;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.4;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  resize: vertical;
+}
+.editing-row {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* ---------- tabs count + toolbar ---------- */
+.tab-count {
+  margin-left: 8px;
+  padding: 1px 8px;
+  font-size: 12px;
+  border-radius: 999px;
+  background: rgba(16, 36, 62, 0.1);
+}
+.tab-btn.active .tab-count {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.search-input {
+  flex: 1 1 260px;
+  max-width: 380px;
+  font-family: inherit;
+  font-size: 16px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--text);
+}
+.search-input:focus {
+  outline: 2px solid var(--steel);
+  outline-offset: 1px;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chip {
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--steel);
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.chip b {
+  margin-left: 4px;
+  color: var(--text);
+}
+.chip.active {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: #fff;
+}
+.chip.active b {
+  color: #fff;
+}
+
+@media (max-width: 700px) {
+  .post-page {
+    padding: 20px 12px 40px;
+  }
+  .table-scroll {
+    max-height: calc(100vh - 300px);
+  }
 }
