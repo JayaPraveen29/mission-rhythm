@@ -18,6 +18,7 @@ import {
   listenAllEntries,
   sendEntry,
   correctEntry,
+  deleteEntry,
 } from "../../lib/entries";
 import { canFill, canCorrect } from "../../lib/permissions";
 import { db } from "../../firebase";
@@ -220,6 +221,21 @@ export default function PostPage() {
     setBusy(false);
   };
 
+  const remove = async (row) => {
+    if (!window.confirm("Permanently delete this entry? This cannot be undone.")) return;
+    setBusy(true);
+    try {
+      await deleteEntry(cfg.key, row.id);
+    } catch (err) {
+      alert(
+        err && err.code === "permission-denied"
+          ? "You don't have permission to delete this entry."
+          : err.message || "Could not delete. Please try again."
+      );
+    }
+    setBusy(false);
+  };
+
   const renderInput = (c) => {
     const disabled = !corrector && c.plan; // IPF/SI: plan fields read-only
     if (c.type === "status" || c.type === "priority" || c.type === "rank") {
@@ -267,7 +283,14 @@ export default function PostPage() {
         </>
       );
     }
-    if (corrector) return <button type="button" onClick={() => startEdit(row)}>Correct</button>;
+    if (corrector) {
+      return (
+        <>
+          <button type="button" onClick={() => startEdit(row)}>Correct</button>
+          <button type="button" disabled={busy} onClick={() => remove(row)}>Delete</button>
+        </>
+      );
+    }
     if (filler && row.locked !== true) return <button type="button" onClick={() => startEdit(row)}>Update</button>;
     if (row.locked === true) return <span className="lock-badge">Sent · Locked</span>;
     return null;

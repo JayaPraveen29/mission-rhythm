@@ -87,7 +87,13 @@ export default function DataEntry() {
       flash(okMessage);
       return true;
     } catch (err) {
-      flash("Could not save. Check your connection and try again.", true);
+      console.error("Save failed:", err);
+      flash(
+        err && err.code === "permission-denied"
+          ? "Could not save: you don't have permission for this post (permission-denied)."
+          : `Could not save. Check your connection and try again.${err && err.code ? ` (${err.code})` : ""}`,
+        true
+      );
       return false;
     } finally {
       setSaving(false);

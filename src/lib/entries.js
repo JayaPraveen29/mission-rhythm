@@ -13,6 +13,7 @@ import {
   collection,
   addDoc,
   updateDoc,
+  deleteDoc,
   runTransaction,
   doc,
   query,
@@ -69,6 +70,11 @@ export function correctEntry(period, id, data, username) {
     correctedBy: username,
     correctedAt: serverTimestamp(),
   });
+}
+
+// ASC / Sr DSC only: permanently removes a row (Firestore rules enforce this).
+export function deleteEntry(period, id) {
+  return deleteDoc(doc(db, COLLECTIONS[period], id));
 }
 
 // Live-subscribe to all rows for one Post. Calls callback(rows) whenever
