@@ -342,3 +342,17 @@ tbody td.actions-col {
     max-height: calc(100vh - 300px);
   }
 }
+
+.post-filter {
+  padding: 10px 12px;
+  border: 1px solid #d5dbe6;
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  min-width: 140px;
+  cursor: pointer;
+}
+.post-filter:focus {
+  outline: none;
+  border-color: #0f2744;
+}
