@@ -131,6 +131,7 @@ export default function PostPage() {
   const [busy, setBusy] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [postFilter, setPostFilter] = useState("All Posts"); // only used by "All Post" logins
 
   // Ranks added on Data Entry ("customRanks") so the Correct dropdown can
   // show them too.
@@ -162,26 +163,42 @@ export default function PostPage() {
   const cfg = PERIODS[tab];
   const allRows = rows[cfg.key];
 
+  // Post names available in the filter dropdown (every post that has data).
+  const postOptions = useMemo(() => {
+    const set = new Set();
+    Object.values(rows).forEach((arr) => arr.forEach((r) => r.post && set.add(r.post)));
+    return [...set].sort((a, b) => a.localeCompare(b));
+  }, [rows]);
+
+  // Rows after the Post filter (everything below works on these).
+  const postRows = useMemo(
+    () =>
+      isAllPosts && postFilter !== "All Posts"
+        ? allRows.filter((r) => r.post === postFilter)
+        : allRows,
+    [allRows, isAllPosts, postFilter]
+  );
+
   // Search across every visible field + optional status filter.
   const list = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return allRows.filter((r) => {
+    return postRows.filter((r) => {
       if (statusFilter !== "All" && (r.status || "Not Reported") !== statusFilter) return false;
       if (!q) return true;
       const hay = [r.post, ...cfg.cols.map((c) => r[c.f])].join(" ").toLowerCase();
       return hay.includes(q);
     });
-  }, [allRows, search, statusFilter, cfg]);
+  }, [postRows, search, statusFilter, cfg]);
 
   // Status counts for the summary chips (ignores the status filter itself).
   const counts = useMemo(() => {
     const c = {};
-    allRows.forEach((r) => {
+    postRows.forEach((r) => {
       const k = r.status || "Not Reported";
       c[k] = (c[k] || 0) + 1;
     });
     return c;
-  }, [allRows]);
+  }, [postRows]);
 
   const cancelEdit = () => {
     setEditingId(null);
@@ -337,9 +354,24 @@ export default function PostPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
+        {isAllPosts && (
+          <select
+            className="post-filter"
+            value={postFilter}
+            onChange={(e) => setPostFilter(e.target.value)}
+            aria-label="Filter by post"
+          >
+            <option value="All Posts">All Posts</option>
+            {postOptions.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
+        )}
         <div className="chips">
           {["All", ...STATUS_OPTIONS].map((st) => {
-            const n = st === "All" ? allRows.length : counts[st] || 0;
+            const n = st === "All" ? postRows.length : counts[st] || 0;
             return (
               <button
                 key={st}
