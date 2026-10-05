@@ -1,6 +1,6 @@
 // pages/Approvals/Approvals.jsx
 //
-// Sr DSC (and TEST) only. Reviews access requests:
+// Sr DSC only. Reviews access requests:
 //   Pending  -> Approve (optionally changing authority/post first) or Reject
 //   Approved -> Save changes to authority/post, Revoke access, or Delete
 //   Rejected -> Approve later if needed, or Delete

@@ -64,7 +64,7 @@ function AppRoutes() {
       <Route
         path="/manage-posts"
         element={
-          <ProtectedRoute allowAuthorities={["Sr DSC", "TEST"]}>
+          <ProtectedRoute allowAuthorities={["Sr DSC"]}>
             <Shell>
               <ManagePosts />
             </Shell>
@@ -74,7 +74,7 @@ function AppRoutes() {
       <Route
         path="/approvals"
         element={
-          <ProtectedRoute allowAuthorities={["Sr DSC", "TEST"]}>
+          <ProtectedRoute allowAuthorities={["Sr DSC"]}>
             <Shell>
               <Approvals />
             </Shell>
