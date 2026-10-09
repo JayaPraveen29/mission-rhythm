@@ -6,7 +6,7 @@
 //   IPF  -> fills POST data      (any post that is NOT an "-OP" code)
 //   SI   -> fills OP data        (codes ending in "-OP", e.g. ALU-OP)
 //   ASC / Sr DSC -> the ONLY roles that can correct an entry after it is sent
-//   ASI  -> fills OP data ONLY on TPGY-OP and PKT-OP (view only elsewhere)
+//   ASI  -> fills OP data ONLY on TPGY-OP, PKT-OP and DSL-OP (view only elsewhere)
 //   Control Room -> view only (Post page + Dashboard, all posts), nothing else
 //   Everyone else (DSC, DI) -> view only on the Post page
 
@@ -21,7 +21,7 @@ export const canManagePosts = (profile) =>
   !!profile && profile.authority === "Sr DSC";
 
 // OP posts where an ASI is allowed to enter data.
-export const ASI_FILL_POSTS = ["TPGY-OP", "PKT-OP"];
+export const ASI_FILL_POSTS = ["TPGY-OP", "PKT-OP", "DSL-OP"];
 
 // Compare names ignoring case, spaces and any kind of dash/symbol,
 // so "TPGY-OP", "TPGY–OP", "tpgy op" all count as the same post.
