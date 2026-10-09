@@ -1,0 +1,200 @@
+/* pages/Reports/Reports.css */
+.reports-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 20px 60px;
+}
+
+.reports-page .page-head h1 {
+  margin: 0 0 4px;
+  font-size: 24px;
+  color: var(--navy);
+}
+.reports-page .page-head p {
+  margin: 0 0 20px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.rp-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.rp-tabs button {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card-bg);
+  color: var(--steel);
+  cursor: pointer;
+}
+.rp-tabs button.on {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: #fff;
+}
+
+.rp-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 6px 20px rgba(16, 36, 62, 0.06);
+  padding: 16px;
+  margin-bottom: 18px;
+}
+
+.rp-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: flex-end;
+}
+.rp-filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 160px;
+}
+.rp-filters label span {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.rp-filters select,
+.rp-filters input {
+  font: inherit;
+  font-size: 14px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--navy);
+  min-height: 38px;
+}
+
+.rp-actions {
+  display: flex;
+  gap: 10px;
+  margin-left: auto;
+}
+.rp-btn {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 9px 18px;
+  min-height: 38px;
+  border: 1px solid var(--navy);
+  border-radius: var(--radius);
+  background: var(--navy);
+  color: #fff;
+  cursor: pointer;
+}
+.rp-btn-alt {
+  background: #fff;
+  color: var(--navy);
+}
+.rp-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.rp-error {
+  background: #fdecea;
+  color: var(--error);
+  border: 1px solid #f3c2be;
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  font-size: 14px;
+}
+
+/* ---- on-screen preview of the sheet ---- */
+.rp-sheet-title {
+  text-align: center;
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--navy);
+}
+.rp-sheet-sub {
+  text-align: center;
+  font-weight: 600;
+  font-size: 14px;
+  margin: 4px 0 12px;
+  color: var(--text);
+}
+.rp-objective {
+  font-size: 13px;
+  font-style: italic;
+  color: var(--text-muted);
+  margin: 0 0 12px;
+}
+
+.rp-head-table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+.rp-head-table th,
+.rp-head-table td {
+  border: 1px solid var(--border);
+  padding: 7px 10px;
+  text-align: left;
+}
+.rp-head-table th {
+  width: 200px;
+  background: #e7ecf3;
+  color: var(--navy);
+}
+.rp-head-table td {
+  font-weight: 600;
+}
+
+.rp-scroll {
+  overflow-x: auto;
+}
+.rp-table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 760px;
+  font-size: 13px;
+}
+.rp-table th,
+.rp-table td {
+  border: 1px solid var(--border);
+  padding: 7px 9px;
+  vertical-align: top;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.rp-table th {
+  background: #d9e2f3;
+  color: var(--navy);
+  text-align: center;
+}
+.rp-table td.c {
+  text-align: center;
+}
+.rp-table td.rp-none {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 22px;
+}
+
+@media (max-width: 640px) {
+  .rp-actions {
+    margin-left: 0;
+    width: 100%;
+  }
+  .rp-actions .rp-btn {
+    flex: 1;
+  }
+  .rp-filters label {
+    min-width: 100%;
+  }
+}
