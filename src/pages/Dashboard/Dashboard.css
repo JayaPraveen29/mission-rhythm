@@ -131,3 +131,53 @@ tbody tr:last-child td {
   color: var(--text-muted);
   padding: 22px 0;
 }
+
+/* ---- export buttons ---- */
+.export-box .export-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--navy);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.export-btn:hover:not(:disabled) {
+  color: #fff;
+  background: var(--navy);
+  border-color: var(--navy);
+}
+
+.export-btn:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.export-btn.xl { border-left: 4px solid #1e7d43; }
+.export-btn.pdf { border-left: 4px solid #b3261e; }
+.export-btn.doc { border-left: 4px solid #2b579a; }
+
+tbody td:first-child {
+  font-weight: 600;
+}
+
+/* ---- closure % colour bands ---- */
+.pct-cell {
+  font-weight: 700;
+}
+.pct-good { color: #1e7d43; background: #eaf6ee; }
+.pct-mid  { color: #8a6100; background: #fdf4dc; }
+.pct-low  { color: #b3261e; background: #fbeceb; }
+.pct-none { color: var(--text-muted); }

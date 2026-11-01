@@ -4,7 +4,7 @@
 // in the app and exports them to Word or PDF. Nothing is written to the
 // database from this page.
 //
-//   Post report   : Daily (one date) / Weekly (one week) / Monthly (one month)
+//   Post report   : Daily (From - To dates) / Weekly (one week) / Monthly (one month)
 //                   for one Post.
 //   Officer-wise  : every officer (or a single officer) over a date range.
 
@@ -13,15 +13,17 @@ import { listenAllEntries } from "../../lib/entries";
 import { STATIC_POSTS, listenPosts } from "../../lib/posts";
 import {
   buildDaily,
+  buildDailyRange,
   buildWeekly,
   buildMonthly,
   buildOfficerWise,
   listOfficers,
-  downloadWord,
-  downloadPdf,
   fmtDate,
   fmtMonth,
 } from "../../lib/reports";
+import { exportModel } from "../../lib/dashboardExport";
+import GraphsPanel from "./GraphsPanel";
+import { listenCorrections, applyCorrections } from "../../lib/officerCorrections";
 import "./Reports.css";
 
 const toISO = (d) =>
@@ -34,6 +36,24 @@ const DEFAULT_TO = DEFAULT_DATE;
 
 const PERIODS = ["Daily", "Weekly", "Monthly"];
 
+// Quick date ranges for the From / To boxes.
+function presetRange(name) {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  if (name === "today") return [toISO(now), toISO(now)];
+  if (name === "week") {
+    const mon = new Date(now);
+    mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    const sun = new Date(mon);
+    sun.setDate(mon.getDate() + 6);
+    return [toISO(mon), toISO(sun)];
+  }
+  if (name === "month") return [toISO(new Date(y, m, 1)), toISO(new Date(y, m + 1, 0))];
+  if (name === "lastmonth") return [toISO(new Date(y, m - 1, 1)), toISO(new Date(y, m, 0))];
+  return null;
+}
+
 export default function Reports() {
   const [mode, setMode] = useState("post"); // "post" | "officer"
   const [period, setPeriod] = useState("Daily");
@@ -42,7 +62,8 @@ export default function Reports() {
   const [data, setData] = useState({ daily: [], weekly: [], monthly: [] });
 
   const [post, setPost] = useState("");
-  const [date, setDate] = useState(DEFAULT_DATE);
+  const [pFrom, setPFrom] = useState(DEFAULT_DATE);
+  const [pTo, setPTo] = useState(DEFAULT_DATE);
   const [weekKey, setWeekKey] = useState("");
   const [month, setMonth] = useState("");
 
@@ -54,13 +75,25 @@ export default function Reports() {
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
 
+  const [corrections, setCorrections] = useState([]);
+
   useEffect(() => listenPosts(setCustomPosts), []);
+  useEffect(() => listenCorrections(setCorrections), []);
   useEffect(() => {
     const unsubs = ["daily", "weekly", "monthly"].map((k) =>
       listenAllEntries(k, (rows) => setData((d) => ({ ...d, [k]: rows })))
     );
     return () => unsubs.forEach((u) => u());
   }, []);
+
+  // Daily rows with officer-name corrections applied (saved data is untouched).
+  const dailyRows = useMemo(() => applyCorrections(data.daily, corrections), [data.daily, corrections]);
+
+  // Posts in the same order as the Dashboard (used by the Graphs tab).
+  const chartPosts = useMemo(
+    () => [...new Set([...STATIC_POSTS, ...customPosts])].filter((p) => p !== "All Post"),
+    [customPosts]
+  );
 
   const posts = useMemo(() => {
     const set = new Set([...STATIC_POSTS, ...customPosts]);
@@ -96,7 +129,7 @@ export default function Reports() {
     if (!monthOptions.includes(month)) setMonth(monthOptions[0] || "");
   }, [monthOptions, month]);
 
-  const officers = useMemo(() => listOfficers(data.daily, offPost), [data.daily, offPost]);
+  const officers = useMemo(() => listOfficers(dailyRows, offPost), [dailyRows, offPost]);
   useEffect(() => {
     if (officer && !officers.some((o) => o.key === officer)) setOfficer("");
   }, [officers, officer]);
@@ -104,21 +137,27 @@ export default function Reports() {
   // The report currently on screen.
   const model = useMemo(() => {
     if (mode === "officer") {
-      return buildOfficerWise(data.daily, { post: offPost, officer, from, to });
+      return buildOfficerWise(dailyRows, {
+        post: offPost,
+        officer,
+        from,
+        to,
+        label: from && from === to ? "DAILY" : "",
+      });
     }
-    if (period === "Daily") return buildDaily(data.daily, post, date);
+    if (period === "Daily") return buildDailyRange(dailyRows, post, pFrom, pTo);
     if (period === "Weekly") {
       const w = weekOptions.find((x) => x.key === weekKey);
       return buildWeekly(data.weekly, post, w?.start || "", w?.end || "");
     }
     return buildMonthly(data.monthly, post, month);
-  }, [mode, period, data, post, date, weekKey, weekOptions, month, offPost, officer, from, to]);
+  }, [mode, period, data, dailyRows, post, pFrom, pTo, weekKey, weekOptions, month, offPost, officer, from, to]);
 
   const run = async (kind) => {
     setError("");
     setBusy(kind);
     try {
-      await (kind === "word" ? downloadWord(model) : downloadPdf(model));
+      await exportModel(kind, model);
     } catch (e) {
       console.error(e);
       setError("Could not create the file. Please try again.");
@@ -132,7 +171,7 @@ export default function Reports() {
     <div className="reports-page">
       <div className="page-head">
         <h1>Reports</h1>
-        <p>Export Mission Rhythm statements to Word or PDF, post-wise or officer-wise.</p>
+        <p>Export Mission Rhythm statements to Excel, Word or PDF, post-wise or officer-wise, or view closure graphs.</p>
       </div>
 
       <div className="rp-tabs">
@@ -142,8 +181,20 @@ export default function Reports() {
         <button type="button" className={mode === "officer" ? "on" : ""} onClick={() => setMode("officer")}>
           Officer-wise Report
         </button>
+        <button type="button" className={mode === "graphs" ? "on" : ""} onClick={() => setMode("graphs")}>
+          Graphs
+        </button>
       </div>
 
+      {mode === "graphs" ? (
+        <GraphsPanel
+          dailyRows={dailyRows}
+          weeklyRows={data.weekly}
+          monthlyRows={data.monthly}
+          posts={chartPosts}
+        />
+      ) : (
+        <>
       <div className="rp-card rp-filters">
         {mode === "post" ? (
           <>
@@ -164,10 +215,16 @@ export default function Reports() {
               </select>
             </label>
             {period === "Daily" && (
-              <label>
-                <span>Date</span>
-                <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-              </label>
+              <>
+                <label>
+                  <span>From</span>
+                  <input type="date" value={pFrom} onChange={(e) => setPFrom(e.target.value)} />
+                </label>
+                <label>
+                  <span>To</span>
+                  <input type="date" value={pTo} min={pFrom} onChange={(e) => setPTo(e.target.value)} />
+                </label>
+              </>
             )}
             {period === "Weekly" && (
               <label>
@@ -219,17 +276,39 @@ export default function Reports() {
               </select>
             </label>
             <label>
+              <span>Quick select</span>
+              <select
+                value=""
+                onChange={(e) => {
+                  const r = presetRange(e.target.value);
+                  if (r) {
+                    setFrom(r[0]);
+                    setTo(r[1]);
+                  }
+                }}
+              >
+                <option value="">Choose…</option>
+                <option value="today">Today</option>
+                <option value="week">This week</option>
+                <option value="month">This month</option>
+                <option value="lastmonth">Last month</option>
+              </select>
+            </label>
+            <label>
               <span>From</span>
               <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
             </label>
             <label>
               <span>To</span>
-              <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+              <input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} />
             </label>
           </>
         )}
 
         <div className="rp-actions">
+          <button type="button" className="rp-btn" disabled={empty || !!busy} onClick={() => run("excel")}>
+            {busy === "excel" ? "Preparing…" : "Export Excel"}
+          </button>
           <button type="button" className="rp-btn" disabled={empty || !!busy} onClick={() => run("word")}>
             {busy === "word" ? "Preparing…" : "Export Word"}
           </button>
@@ -290,6 +369,8 @@ export default function Reports() {
           </table>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }

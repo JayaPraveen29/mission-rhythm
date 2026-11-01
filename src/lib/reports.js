@@ -35,8 +35,29 @@ const byEntryOrder = (a, b) => entryTime(a) - entryTime(b);
 const clean = (v) => (v == null ? "" : String(v).trim());
 
 // "ASC TPJ" already carries the post; "IPF" + post TJ -> "IPF/TJ".
+// ---- officer name tidy -------------------------------------------------
+// Names are typed by hand, so the same officer can appear as "A Siva Kumar",
+// "A.Sivakumar" or "A Sivakumar, KMU-OP". For matching we ignore case, dots,
+// commas, spaces and a trailing post code (", KMU-OP"). Spelling differences
+// such as "Sunderarajan" / "Sunderrajan" are NOT merged on purpose.
+const squashText = (v) => String(v || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+// Name without a trailing ", <post code>" (the post itself, or any "...-OP").
+export function cleanOfficerName(name, post) {
+  let n = clean(name).replace(/\s+/g, " ");
+  const m = n.match(/^(.*\S)\s*,\s*([A-Za-z][A-Za-z0-9()\- ]*)$/);
+  if (m) {
+    const tail = squashText(m[2]);
+    if (tail && (tail === squashText(post) || /OP$/.test(tail))) n = m[1];
+  }
+  return n;
+}
+
+// Matching key for a person's name.
+export const normOfficerName = (name, post) => squashText(cleanOfficerName(name, post));
+
 export function officerLabel(row) {
-  const name = clean(row.officerName);
+  const name = cleanOfficerName(row.officerName, row.post);
   const rank = clean(row.officerRank);
   const post = clean(row.post);
   let rp = rank;
@@ -67,7 +88,7 @@ export function buildDaily(rows, post, date) {
   const groups = [];
   const index = {};
   list.forEach((r) => {
-    const k = clean(r.officerName).toLowerCase() + "|" + clean(r.officerRank);
+    const k = normOfficerName(r.officerName, r.post) + "|" + clean(r.officerRank).toUpperCase();
     if (!(k in index)) {
       index[k] = groups.length;
       groups.push({ label: officerLabel(r), items: [] });
@@ -113,6 +134,64 @@ export function buildDaily(rows, post, date) {
     ],
     rows: body,
     fileName: `Mission_Rhythm_Daily_${post}_${fmtDate(date)}`,
+  };
+}
+
+// A date range, one Post -> one row per date per officer. (A single date
+// uses the normal one-day sheet, buildDaily.)
+export function buildDailyRange(rows, post, from, to) {
+  if (!from || !to || from === to) return buildDaily(rows, post, from || to);
+  const list = rows
+    .filter((r) => r.post === post && r.date && r.date >= from && r.date <= to)
+    .sort((a, b) => (a.date === b.date ? byEntryOrder(a, b) : a.date < b.date ? -1 : 1));
+
+  const groups = [];
+  const index = {};
+  list.forEach((r) => {
+    const k = r.date + "|" + normOfficerName(r.officerName, r.post) + "|" + clean(r.officerRank).toUpperCase();
+    if (!(k in index)) {
+      index[k] = groups.length;
+      groups.push({ date: r.date, label: officerLabel(r), items: [] });
+    }
+    groups[index[k]].items.push(r);
+  });
+
+  const body = groups.map((g, i) => [
+    String(i + 1),
+    fmtDate(g.date),
+    g.label,
+    numbered(
+      g.items.map((r) => {
+        const t = clean(r.priorityTask);
+        return clean(r.target) ? `${t}\n   Target: ${clean(r.target)}` : t;
+      })
+    ),
+    numbered(
+      g.items.map((r) => {
+        const done = [statusText(r.status) && `[${r.status}]`, clean(r.achievement)].filter(Boolean).join(" ");
+        return clean(r.result) ? `${done}${done ? " — " : ""}Result: ${clean(r.result)}` : done;
+      })
+    ),
+    numbered(g.items.map((r) => [clean(r.carryForward), clean(r.remarks)].filter(Boolean).join(" | "))),
+  ]);
+
+  return {
+    title: "MISSION RHYTHM",
+    subtitle: "DAILY SCHEDULE-CUM-ACHIEVEMENT SHEET",
+    header: [
+      ["Post / Outpost", post],
+      ["Period", `From ${fmtDate(from)} to ${fmtDate(to)}`],
+    ],
+    columns: [
+      { h: "Sl. No.", w: 0.05 },
+      { h: "Date", w: 0.09 },
+      { h: "Name of the Officer with Rank", w: 0.16 },
+      { h: "Tasks Assigned in the Morning", w: 0.26 },
+      { h: "Tasks Accomplished in the Evening", w: 0.28 },
+      { h: "Remarks, if any", w: 0.16 },
+    ],
+    rows: body,
+    fileName: `Mission_Rhythm_Daily_${post}_${fmtDate(from)}-${fmtDate(to)}`,
   };
 }
 
@@ -185,19 +264,20 @@ export function buildMonthly(rows, post, month) {
 // Officer-wise statement built from the Daily entries in a date range.
 //   post     : a Post code, or "" for every Post
 //   officer  : an officerKey(...) value, or "" for every officer
-export const officerKey = (r) => clean(r.officerName).toLowerCase() + "|" + clean(r.post);
+export const officerKey = (r) => normOfficerName(r.officerName, r.post) + "|" + clean(r.post);
 
 export function listOfficers(dailyRows, post) {
   const map = new Map();
   [...dailyRows].sort(byEntryOrder).forEach((r) => {
     if (!clean(r.officerName)) return;
     if (post && r.post !== post) return;
-    map.set(officerKey(r), { key: officerKey(r), label: officerLabel(r).replace("\n", " — ") });
+    if (!map.has(officerKey(r)))
+      map.set(officerKey(r), { key: officerKey(r), label: officerLabel(r).replace("\n", " — ") });
   });
   return [...map.values()].sort((a, b) => a.label.localeCompare(b.label));
 }
 
-export function buildOfficerWise(dailyRows, { post, officer, from, to }) {
+export function buildOfficerWise(dailyRows, { post, officer, from, to, label = "" }) {
   const list = dailyRows
     .filter(
       (r) =>
@@ -227,12 +307,18 @@ export function buildOfficerWise(dailyRows, { post, officer, from, to }) {
     const achieved = g.items.filter((r) => r.status === "Achieved").length;
     const partly = g.items.filter((r) => r.status === "Partly Achieved").length;
     const notAch = g.items.filter((r) => r.status === "Not Achieved").length;
+    const na = g.items.filter((r) => r.status === "Not Applicable").length;
     const pending = g.items.filter((r) => !r.status || r.status === "Not Reported").length;
+    // Closure % = Achieved / (Total - Not Applicable), same as the Dashboard.
+    const applicable = g.items.length - na;
+    const closure = applicable > 0 ? Math.round((achieved / applicable) * 100) : 0;
     const summary =
       `Tasks: ${g.items.length}\nAchieved: ${achieved}` +
       (partly ? `\nPartly: ${partly}` : "") +
       (notAch ? `\nNot achieved: ${notAch}` : "") +
-      (pending ? `\nNot reported: ${pending}` : "");
+      (pending ? `\nNot reported: ${pending}` : "") +
+      (na ? `\nNot applicable: ${na}` : "") +
+      `\nClosure: ${closure}%`;
 
     return [
       String(i + 1),
@@ -264,7 +350,7 @@ export function buildOfficerWise(dailyRows, { post, officer, from, to }) {
   const periodTxt = `From ${fmtDate(from)} to ${fmtDate(to)}`;
   return {
     title: "MISSION RHYTHM",
-    subtitle: single ? "OFFICER-WISE ACHIEVEMENT STATEMENT" : "OFFICER-WISE ACHIEVEMENT STATEMENT",
+    subtitle: label ? `OFFICER-WISE ${label} ACHIEVEMENT STATEMENT` : "OFFICER-WISE ACHIEVEMENT STATEMENT",
     header: [
       ["Name of Post / Outpost", post || "All Posts"],
       ["Period", periodTxt],

@@ -9,6 +9,8 @@ import PostPage from "./pages/PostPage/PostPage";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import ManagePosts from "./pages/ManagePosts/ManagePosts";
 import Approvals from "./pages/Approvals/Approvals";
+import Reports from "./pages/Reports/Reports";
+import OfficerNames from "./pages/OfficerNames/OfficerNames";
 import { homePath } from "./lib/permissions";
 
 function Shell({ children }) {
@@ -77,6 +79,26 @@ function AppRoutes() {
           <ProtectedRoute allowAuthorities={["Sr DSC"]}>
             <Shell>
               <Approvals />
+            </Shell>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/reports"
+        element={
+          <ProtectedRoute allowAuthorities={["Sr DSC"]}>
+            <Shell>
+              <Reports />
+            </Shell>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/officer-names"
+        element={
+          <ProtectedRoute allowAuthorities={["Sr DSC"]}>
+            <Shell>
+              <OfficerNames />
             </Shell>
           </ProtectedRoute>
         }

@@ -71,6 +71,18 @@ export default function NavBar() {
           )}
 
           {isSrDsc && (
+            <NavLink to="/reports" className={navLinkClass}>
+              Reports
+            </NavLink>
+          )}
+
+          {isSrDsc && (
+            <NavLink to="/officer-names" className={navLinkClass}>
+              Officer Names
+            </NavLink>
+          )}
+
+          {isSrDsc && (
             <NavLink to="/manage-posts" className={navLinkClass}>
               Add Post
             </NavLink>
@@ -226,6 +238,26 @@ export default function NavBar() {
               onClick={closeMenu}
             >
               Dashboard
+            </NavLink>
+          )}
+
+          {isSrDsc && (
+            <NavLink
+              to="/reports"
+              className={navLinkClass}
+              onClick={closeMenu}
+            >
+              Reports
+            </NavLink>
+          )}
+
+          {isSrDsc && (
+            <NavLink
+              to="/officer-names"
+              className={navLinkClass}
+              onClick={closeMenu}
+            >
+              Officer Names
             </NavLink>
           )}
 

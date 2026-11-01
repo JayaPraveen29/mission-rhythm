@@ -4,34 +4,76 @@
 // specimen: one row per Post/OP with Daily/Weekly/Monthly task counts,
 // closure counts, and closure %, plus a Quick View summary strip.
 //
-// "Closure" = a row whose status is "Achieved" (matches the Status list in
-// the workbook's LISTS sheet). Counts are live, all-time totals across
-// every Post (static + any Sr DSC has added via Manage Posts).
+// "Closure" = a row whose status is "Achieved".
+// Closure % = Achieved / (Total tasks - Not Applicable tasks), so rows marked
+// "Not Applicable" do not pull the % down. The Tasks columns still show the
+// total number of entries. Counts are live and follow the review filters.
 
 import { useEffect, useMemo, useState } from "react";
 import { listenAllEntries } from "../../lib/entries";
 import { STATIC_POSTS, listenPosts } from "../../lib/posts";
+import { buildDashboardModel, exportModel } from "../../lib/dashboardExport";
 import "./Dashboard.css";
 
 function summarize(rows, postList) {
   const map = {};
   postList.forEach((p) => {
-    map[p] = { tasks: 0, closures: 0 };
+    map[p] = { tasks: 0, closures: 0, na: 0 };
   });
   rows.forEach((r) => {
-    if (!map[r.post]) map[r.post] = { tasks: 0, closures: 0 };
+    if (!map[r.post]) map[r.post] = { tasks: 0, closures: 0, na: 0 };
     map[r.post].tasks += 1;
+    if (r.status === "Not Applicable") map[r.post].na += 1;
     if (r.status === "Achieved") map[r.post].closures += 1;
   });
   return map;
 }
 
-const pct = (closures, tasks) => (tasks > 0 ? Math.round((closures / tasks) * 100) : 0);
+// Closure % = Achieved / (Total - Not Applicable). 0 when nothing is applicable.
+const pct = (closures, tasks, na = 0) => {
+  const applicable = tasks - na;
+  return applicable > 0 ? Math.round((closures / applicable) * 100) : 0;
+};
 
 // Defaults, in the native <input> formats: date = YYYY-MM-DD, month = YYYY-MM.
 // They follow the current date: this week (Mon–Sun) and this month.
 const toISO = (d) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+
+// ---------- small inline icons (no extra library) ----------
+const Svg = ({ children, size = 16 }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    {children}
+  </svg>
+);
+const IconDownload = () => (
+  <Svg>
+    <path d="M12 3v12M7 11l5 5 5-5M4 21h16" />
+  </Svg>
+);
+
+// Colour band for a closure %: green >= 90, amber 60-89, red < 60,
+// grey when the post has nothing applicable to close.
+const pctClass = (closures, tasks, na) => {
+  if (tasks - na <= 0) return "pct-none";
+  const v = pct(closures, tasks, na);
+  return v >= 90 ? "pct-good" : v >= 60 ? "pct-mid" : "pct-low";
+};
+
+function PctCell({ x }) {
+  return <td className={`pct-cell ${pctClass(x.closures, x.tasks, x.na)}`}>{pct(x.closures, x.tasks, x.na)}%</td>;
+}
 
 function currentWeek() {
   const now = new Date();
@@ -121,7 +163,32 @@ export default function Dashboard() {
     (sum, p) => sum + (weeklySummary[p]?.closures || 0),
     0
   );
-  const overallWeeklyClosure = pct(totalWeeklyClosures, totalWeeklyTasks);
+  const totalWeeklyNA = allPosts.reduce((sum, p) => sum + (weeklySummary[p]?.na || 0), 0);
+  const overallWeeklyClosure = pct(totalWeeklyClosures, totalWeeklyTasks, totalWeeklyNA);
+
+  const [exporting, setExporting] = useState("");
+  const [exportScope, setExportScope] = useState("all");
+
+  const runExport = async (kind) => {
+    setExporting(kind);
+    try {
+      const model = buildDashboardModel({
+        posts: allPosts,
+        summaries: [dailySummary, weeklySummary, monthlySummary],
+        pct,
+        weekStart: reviewWeekStart,
+        weekEnd: reviewWeekEnd,
+        month: reviewMonth,
+        scope: exportScope,
+      });
+      await exportModel(kind, model);
+    } catch (e) {
+      console.error(e);
+      alert("Export failed. Please try again.");
+    } finally {
+      setExporting("");
+    }
+  };
 
   return (
     <div className="dashboard-page">
@@ -192,6 +259,40 @@ export default function Dashboard() {
             onChange={(e) => setReviewMonth(e.target.value)}
           />
         </div>
+        <div className="review-item export-box">
+          <span className="review-label">Export</span>
+          <select
+            className="review-input"
+            value={exportScope}
+            onChange={(e) => setExportScope(e.target.value)}
+            aria-label="Data to export"
+          >
+            <option value="all">All data</option>
+            <option value="daily">Daily data</option>
+            <option value="weekly">Weekly data</option>
+            <option value="monthly">Monthly data</option>
+          </select>
+          <div className="export-buttons">
+            {[
+              ["excel", "Excel", "xl"],
+              ["pdf", "PDF", "pdf"],
+              ["word", "Word", "doc"],
+            ].map(([k, label, cls]) => (
+              <button
+                key={k}
+                type="button"
+                className={`export-btn ${cls}`}
+                title={`Download as ${label}`}
+                aria-label={`Download as ${label}`}
+                disabled={!!exporting}
+                onClick={() => runExport(k)}
+              >
+                <IconDownload />
+                <span>{exporting === k ? "…" : label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="table-scroll">
@@ -212,21 +313,21 @@ export default function Dashboard() {
           </thead>
           <tbody>
             {allPosts.map((p) => {
-              const d = dailySummary[p] || { tasks: 0, closures: 0 };
-              const w = weeklySummary[p] || { tasks: 0, closures: 0 };
-              const m = monthlySummary[p] || { tasks: 0, closures: 0 };
+              const d = dailySummary[p] || { tasks: 0, closures: 0, na: 0 };
+              const w = weeklySummary[p] || { tasks: 0, closures: 0, na: 0 };
+              const m = monthlySummary[p] || { tasks: 0, closures: 0, na: 0 };
               return (
                 <tr key={p}>
                   <td>{p}</td>
                   <td>{d.tasks}</td>
                   <td>{d.closures}</td>
-                  <td>{pct(d.closures, d.tasks)}%</td>
+                  <PctCell x={d} />
                   <td>{w.tasks}</td>
                   <td>{w.closures}</td>
-                  <td>{pct(w.closures, w.tasks)}%</td>
+                  <PctCell x={w} />
                   <td>{m.tasks}</td>
                   <td>{m.closures}</td>
-                  <td>{pct(m.closures, m.tasks)}%</td>
+                  <PctCell x={m} />
                 </tr>
               );
             })}

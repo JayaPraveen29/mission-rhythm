@@ -198,3 +198,17 @@
     min-width: 100%;
   }
 }
+
+/* ---- Graphs tab ---- */
+.rp-chart-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+.rp-chart-scroll {
+  overflow-x: auto;
+}
+.rp-chart-scroll svg {
+  display: block;
+  max-width: none;
+}
