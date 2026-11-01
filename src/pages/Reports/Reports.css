@@ -40,6 +40,9 @@
 }
 
 .rp-card {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -67,6 +70,9 @@
 }
 .rp-filters select,
 .rp-filters input {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
   font: inherit;
   font-size: 14px;
   padding: 8px 10px;
@@ -135,6 +141,10 @@
 }
 
 .rp-head-table {
+  /* Dashboard.css / PostPage.css give every <table> a min-width; reset it
+     here so this small header table always fits inside its card. */
+  min-width: 0;
+  table-layout: fixed;
   border-collapse: collapse;
   width: 100%;
   margin-bottom: 12px;
@@ -145,6 +155,10 @@
   border: 1px solid var(--border);
   padding: 7px 10px;
   text-align: left;
+}
+.rp-head-table th,
+.rp-head-table td {
+  overflow-wrap: anywhere;
 }
 .rp-head-table th {
   width: 200px;
@@ -187,6 +201,23 @@
 }
 
 @media (max-width: 640px) {
+  .reports-page {
+    padding: 20px 12px 48px;
+  }
+  .rp-card {
+    padding: 12px;
+  }
+  .rp-head-table th {
+    width: 38%;
+  }
+  .rp-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .rp-filters select,
+  .rp-filters input {
+    width: 100%;
+  }
   .rp-actions {
     margin-left: 0;
     width: 100%;
